@@ -1,0 +1,14 @@
+[package]
+name = "carrot-crypto"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+blake2 = "0.10" 
+curve25519-dalek = { version = "4", default-features = false, features = ["alloc", "rand_core", "zeroize"] }
+generic-array = "0.14"
+group = "0.13"
+monero-generators = { git = "https://github.com/monero-oxide/monero-oxide", rev = "50dd3dbc0cc9048247eb734d27eb1d516aecacd2" }
+rand_core = "0.6"
+typenum = {version = "1.18", features = ["const-generics"] }
+zeroize = {version = "1.8", features = ["zeroize_derive"] }
