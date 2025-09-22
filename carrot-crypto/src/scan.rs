@@ -19,7 +19,7 @@ fn is_main_address_spend_pubkey(address_spend_pubkey: &AddressSpendPubkey,
 
 fn try_scan_carrot_coinbase_enote_checked(enote: &CarrotCoinbaseEnoteV1,
     s_sender_receiver_unctx: &MontgomeryECDH,
-    main_addresss_spend_pubkeys: &[AddressSpendPubkey]
+    main_address_spend_pubkeys: &[AddressSpendPubkey]
 )
     -> Option<(OnetimeExtensionG, OnetimeExtensionT, AddressSpendPubkey)>
 {
@@ -28,7 +28,7 @@ fn try_scan_carrot_coinbase_enote_checked(enote: &CarrotCoinbaseEnoteV1,
         unsafe { try_scan_carrot_coinbase_enote_no_janus(enote,
             s_sender_receiver_unctx) }?;
 
-    if (!is_main_address_spend_pubkey(&address_spend_pubkey, main_addresss_spend_pubkeys)) {
+    if !is_main_address_spend_pubkey(&address_spend_pubkey, main_address_spend_pubkeys) {
         return None;
     }
 

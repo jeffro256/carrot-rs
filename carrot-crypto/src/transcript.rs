@@ -37,7 +37,7 @@ macro_rules! make_carrot_transcript {
                 #![allow(unused_mut)]
                 let mut transcript_idx = 1 + $domain_sep.len();
                 $(
-                    let es_bytes = ($es).to_transcript_bytes();
+                    let es_bytes = ($es as &$trans_type).to_transcript_bytes();
                     let es_slice = es_bytes.as_slice();
                     transcript[transcript_idx..(transcript_idx+es_slice.len())].copy_from_slice(es_slice);
                     transcript_idx += es_slice.len();

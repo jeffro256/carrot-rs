@@ -173,7 +173,7 @@ pub fn make_carrot_amount_blinding_factor(s_sender_receiver: &SenderReceiverSecr
     };
     // k_a = H_n(s^ctx_sr, a, K^j_s, enote_type)
     let transcript = make_carrot_transcript!(domain_separators::AMOUNT_BLINDING_FACTOR,
-        Amount: amount, AddressSpendPubkey : address_spend_pubkey, u8 : enote_type_u8);
+        Amount: &amount, AddressSpendPubkey : address_spend_pubkey, u8 : &enote_type_u8);
     AmountBlindingKey(ScalarSecret(derive_scalar(&transcript, &s_sender_receiver.0.0)))
 }
 
