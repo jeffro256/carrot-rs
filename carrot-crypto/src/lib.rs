@@ -1,3 +1,5 @@
+#![no_std]
+
 mod account_secrets;
 mod address_utils;
 mod consts;

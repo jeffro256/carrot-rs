@@ -20,7 +20,8 @@ pub fn make_carrot_enote_ephemeral_privkey(anchor_norm: &JanusAnchor,
 {
     // k_e = (H_64(anchor_norm, input_context, K^j_s, pid)) mod l
     let transcript = make_carrot_transcript!(domain_separators::EPHEMERAL_PRIVKEY,
-        anchor_norm, input_context, address_spend_pubkey, payment_id);
+        JanusAnchor : anchor_norm, InputContext : input_context, AddressSpendPubkey : address_spend_pubkey,
+        PaymentId : payment_id);
     EnoteEphemeralKey(ScalarSecret(derive_scalar(&transcript, &[])))
 }
 
@@ -81,7 +82,8 @@ pub fn make_carrot_view_tag(s_sender_receiver_unctx: &[u8; 32],
     onetime_address: &OutputPubkey) -> ViewTag
 {
     // vt = H_3(s_sr || input_context || Ko)
-    let transcript = make_carrot_transcript!(domain_separators::VIEW_TAG, input_context, onetime_address);
+    let transcript = make_carrot_transcript!(domain_separators::VIEW_TAG,
+        InputContext : input_context, OutputPubkey : onetime_address);
     ViewTag(derive_bytes_3(&transcript, s_sender_receiver_unctx))
 }
 
@@ -109,7 +111,7 @@ pub fn make_carrot_sender_receiver_secret(s_sender_receiver_unctx: &[u8; 32],
 {
     // s^ctx_sr = H_32(s_sr, D_e, input_context)
     let transcript = make_carrot_transcript!(domain_separators::SENDER_RECEIVER_SECRET,
-        enote_ephemeral_pubkey, input_context);
+        EnoteEphemeralPubkey : enote_ephemeral_pubkey, InputContext : input_context);
     SenderReceiverSecret(Uniform32Secret(derive_bytes_32(&transcript, s_sender_receiver_unctx)))
 }
 
@@ -117,7 +119,8 @@ pub fn make_carrot_onetime_address_extension_g(s_sender_receiver: &SenderReceive
     amount_commitment: &AmountCommitment) -> OnetimeExtensionG
 {
     // k^o_g = H_n("..g..", s^ctx_sr, C_a)
-    let transcript = make_carrot_transcript!(domain_separators::ONETIME_EXTENSION_G, amount_commitment);
+    let transcript = make_carrot_transcript!(domain_separators::ONETIME_EXTENSION_G,
+        AmountCommitment : amount_commitment);
     OnetimeExtensionG(ScalarSecret(derive_scalar(&transcript, &s_sender_receiver.0.0)))
 }
 
@@ -125,7 +128,8 @@ pub fn make_carrot_onetime_address_extension_t(s_sender_receiver: &SenderReceive
     amount_commitment: &AmountCommitment) -> OnetimeExtensionT
 {
     // k^o_t = H_n("..t..", s^ctx_sr, C_a)
-    let transcript = make_carrot_transcript!(domain_separators::ONETIME_EXTENSION_T, amount_commitment);
+    let transcript = make_carrot_transcript!(domain_separators::ONETIME_EXTENSION_T,
+        AmountCommitment : amount_commitment);
     OnetimeExtensionT(ScalarSecret(derive_scalar(&transcript, &s_sender_receiver.0.0)))
 }
 
@@ -169,7 +173,7 @@ pub fn make_carrot_amount_blinding_factor(s_sender_receiver: &SenderReceiverSecr
     };
     // k_a = H_n(s^ctx_sr, a, K^j_s, enote_type)
     let transcript = make_carrot_transcript!(domain_separators::AMOUNT_BLINDING_FACTOR,
-        amount, address_spend_pubkey, enote_type_u8);
+        Amount: amount, AddressSpendPubkey : address_spend_pubkey, u8 : enote_type_u8);
     AmountBlindingKey(ScalarSecret(derive_scalar(&transcript, &s_sender_receiver.0.0)))
 }
 
@@ -177,7 +181,8 @@ pub fn make_carrot_anchor_encryption_mask(s_sender_receiver: &SenderReceiverSecr
     onetime_address: &OutputPubkey) -> EncryptedJanusAnchor
 {
     // m_anchor = H_16(s^ctx_sr, Ko)
-    let transcript = make_carrot_transcript!(domain_separators::ENCRYPTION_MASK_ANCHOR, onetime_address);
+    let transcript = make_carrot_transcript!(domain_separators::ENCRYPTION_MASK_ANCHOR,
+        OutputPubkey : onetime_address);
     EncryptedJanusAnchor(derive_bytes_16(&transcript, &s_sender_receiver.0.0))
 }
 
@@ -207,7 +212,8 @@ pub fn make_carrot_amount_encryption_mask(s_sender_receiver: &SenderReceiverSecr
     onetime_address: &OutputPubkey) -> EncryptedAmount
 {
     // m_a = H_8(s^ctx_sr, Ko)
-    let transcript = make_carrot_transcript!(domain_separators::ENCRYPTION_MASK_AMOUNT, onetime_address);
+    let transcript = make_carrot_transcript!(domain_separators::ENCRYPTION_MASK_AMOUNT, 
+        OutputPubkey : onetime_address);
     EncryptedAmount(derive_bytes_8(&transcript,&s_sender_receiver.0.0))
 }
 
@@ -237,7 +243,8 @@ pub fn make_carrot_payment_id_encryption_mask(s_sender_receiver: &SenderReceiver
     onetime_address: &OutputPubkey) -> EncryptedPaymentId
 {
     // m_pid = H_8(s^ctx_sr, Ko)
-    let transcript = make_carrot_transcript!(domain_separators::ENCRYPTION_MASK_PAYMENT_ID, onetime_address);
+    let transcript = make_carrot_transcript!(domain_separators::ENCRYPTION_MASK_PAYMENT_ID,
+        OutputPubkey : onetime_address);
     EncryptedPaymentId(derive_bytes_8(&transcript, &s_sender_receiver.0.0))
 }
 
@@ -270,7 +277,7 @@ pub fn make_carrot_janus_anchor_special(enote_ephemeral_pubkey: &EnoteEphemeralP
 {
     // anchor_sp = H_16(D_e, input_context, Ko, k_v)
     let transcript = make_carrot_transcript!(domain_separators::JANUS_ANCHOR_SPECIAL,
-        enote_ephemeral_pubkey, input_context, onetime_address);
+        EnoteEphemeralPubkey : enote_ephemeral_pubkey, InputContext : input_context, OutputPubkey : onetime_address);
     JanusAnchor(derive_bytes_16(&transcript, &k_view.0.0.to_bytes()))
 }
 

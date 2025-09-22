@@ -3,6 +3,7 @@ use curve25519_dalek::{edwards::CompressedEdwardsY, MontgomeryPoint, Scalar};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::random::Random;
+use crate::transcript::ToTranscriptBytes;
 
 pub const JANUS_ANCHOR_BYTES: usize = 16;
 pub const ENCRYPTED_AMOUNT_BYTES: usize = 8;
@@ -18,6 +19,12 @@ macro_rules! define_tiny_type {
             type Params = <$base as Random>::Params;
             fn new_random_with_params<R: rand_core::CryptoRngCore + ?Sized>(rng: &mut R, p: Self::Params) -> Self {
                 $tiny(<$base>::new_random_with_params(rng, p))
+            }
+        }
+        impl ToTranscriptBytes for $tiny {
+            type Len = <$base as ToTranscriptBytes>::Len;
+            fn to_transcript_bytes(&self) -> generic_array::GenericArray<u8, Self::Len> {
+                self.0.to_transcript_bytes()
             }
         }
     };
