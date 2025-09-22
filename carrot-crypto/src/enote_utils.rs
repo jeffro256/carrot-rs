@@ -1,17 +1,10 @@
-use curve25519_dalek::{EdwardsPoint, MontgomeryPoint};
-use group::GroupEncoding;
+use curve25519_dalek::MontgomeryPoint;
 
 use crate::core_types::*;
 use crate::domain_separators;
 use crate::hash_functions::*;
 use crate::math_utils::*;
 use crate::transcript::*;
-
-pub struct EnoteEphemeralKey(pub ScalarSecret);
-pub struct OnetimeExtensionG(pub ScalarSecret);
-pub struct OnetimeExtensionT(pub ScalarSecret);
-pub struct OnetimeExtension(pub EdwardsPoint);
-pub struct SenderReceiverSecret(pub Uniform32Secret);
 
 pub fn make_carrot_enote_ephemeral_privkey(anchor_norm: &JanusAnchor,
     input_context: &InputContext,
@@ -59,7 +52,7 @@ pub fn make_carrot_enote_ephemeral_pubkey(enote_ephemeral_privkey: &EnoteEphemer
 }
 
 pub fn make_carrot_uncontextualized_shared_key_receiver(k_view: &ViewIncomingKey,
-    enote_ephemeral_pubkey: EnoteEphemeralPubkey) -> MontgomeryECDH
+    enote_ephemeral_pubkey: &EnoteEphemeralPubkey) -> MontgomeryECDH
 {
     // s_sr = k_v D_e
     MontgomeryECDH(&k_view.0.0 * &enote_ephemeral_pubkey.0)
@@ -152,14 +145,12 @@ pub fn make_carrot_onetime_address(address_spend_pubkey: &AddressSpendPubkey,
     s_sender_receiver: &SenderReceiverSecret,
     amount_commitment: &AmountCommitment) -> Option<OutputPubkey>
 {
-    let address_spend_pubkey = EdwardsPoint::from_bytes(&address_spend_pubkey.0.0).into_option()?;
-
     // K^o_ext = k^o_g G + k^o_t T
     let sender_extension_pubkey = make_carrot_onetime_address_extension_pubkey(s_sender_receiver,
         amount_commitment);
 
     // Ko = K^j_s + K^o_ext
-    Some(OutputPubkey((address_spend_pubkey + sender_extension_pubkey.0).compress()))
+    Some(OutputPubkey(add_edwards(&address_spend_pubkey.0, &sender_extension_pubkey.0)?))
 }
 
 pub fn make_carrot_amount_blinding_factor(s_sender_receiver: &SenderReceiverSecret,
@@ -290,9 +281,7 @@ pub fn recover_address_spend_pubkey(onetime_address: &OutputPubkey,
         amount_commitment);
 
     // K^j_s = Ko - K^o_ext
-    #[allow(non_snake_case)]
-    let K_j_s = EdwardsPoint::from_bytes(&onetime_address.0.0).into_option()? - sender_extension_pubkey.0;
-    Some(AddressSpendPubkey(K_j_s.compress()))
+    Some(AddressSpendPubkey(sub_edwards(&onetime_address.0, &sender_extension_pubkey.0)?))
 }
 
 pub fn test_carrot_view_tag(s_sender_receiver_unctx: &[u8; 32],

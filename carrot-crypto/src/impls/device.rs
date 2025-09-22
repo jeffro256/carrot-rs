@@ -1,4 +1,4 @@
-use crate::address_utils::make_carrot_index_extension_generator;
+use crate::account::make_carrot_index_extension_generator;
 use crate::core_types::*;
 use crate::device::*;
 use crate::enote_utils::*;

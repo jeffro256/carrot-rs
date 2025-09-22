@@ -37,6 +37,7 @@ define_tiny_type!{AmountCommitment, CompressedEdwardsY, Default}
 define_tiny_type!{KeyImageGenerator, CompressedEdwardsY, Default}
 define_tiny_type!{KeyImage, CompressedEdwardsY, Default}
 define_tiny_type!{EnoteEphemeralPubkey, MontgomeryPoint, Default}
+define_tiny_type!{OnetimeExtension, CompressedEdwardsY, Default}
 
 macro_rules! define_tiny_byte_type {
     ($tiny:ident, $size:expr, $($extra_derivs:ident),*) => {
@@ -61,6 +62,10 @@ define_tiny_type!{GenerateAddressSecret, Uniform32Secret, Default}
 define_tiny_type!{AddressIndexGeneratorSecret, Uniform32Secret, Default}
 define_tiny_type!{SubaddressScalarSecret, ScalarSecret, Default}
 define_tiny_type!{AmountBlindingKey, ScalarSecret, Default}
+define_tiny_type!{EnoteEphemeralKey, ScalarSecret, Default}
+define_tiny_type!{OnetimeExtensionG, ScalarSecret, Default}
+define_tiny_type!{OnetimeExtensionT, ScalarSecret, Default}
+define_tiny_type!{SenderReceiverSecret, Uniform32Secret, Default}
 
 /// either encodes randomness the private key of, or an HMAC of, the ephemeral pubkey 
 define_tiny_byte_type!{JanusAnchor, JANUS_ANCHOR_BYTES, Default}

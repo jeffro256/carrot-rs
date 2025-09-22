@@ -1,7 +1,6 @@
 use curve25519_dalek::{EdwardsPoint, MontgomeryPoint};
 
 use crate::core_types::*;
-use crate::enote_utils::SenderReceiverSecret;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ErrorKind {

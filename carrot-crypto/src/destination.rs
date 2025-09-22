@@ -1,7 +1,7 @@
 use curve25519_dalek::EdwardsPoint;
 use group::GroupEncoding;
 
-use crate::address_utils::make_carrot_subaddress_scalar;
+use crate::account::make_carrot_subaddress_scalar;
 use crate::core_types::*;
 use crate::device::*;
 use crate::math_utils::scalar_mul_key_vartime;
