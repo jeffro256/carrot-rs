@@ -1,3 +1,4 @@
+use core::fmt::{Debug, Display};
 use curve25519_dalek::Scalar;
 
 use crate::core_types::*;
@@ -51,6 +52,7 @@ pub struct RCTOutputEnoteProposal
     pub amount_blinding_factor: AmountBlindingKey
 }
 
+#[derive(Debug)]
 pub enum ErrorKind {
     BadAddressPoints,
     DeviceError,
@@ -63,8 +65,16 @@ pub enum ErrorKind {
     WrongOutputNumber
 }
 
+#[derive(Debug)]
 pub struct Error {
     kind: ErrorKind
+}
+
+/// @TODO: real display
+impl Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        Debug::fmt(&self.kind, f)
+    }
 }
 
 impl Error {
@@ -72,6 +82,8 @@ impl Error {
         Self{kind}
     }
 }
+
+impl core::error::Error for Error {}
 
 pub type Result<T> = core::result::Result<T, Error>;
 

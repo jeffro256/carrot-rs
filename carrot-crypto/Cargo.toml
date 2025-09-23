@@ -12,3 +12,6 @@ monero-generators = { git = "https://github.com/monero-oxide/monero-oxide", rev 
 rand_core = "0.6"
 typenum = {version = "1.18", features = ["const-generics"] }
 zeroize = {version = "1.8", features = ["zeroize_derive"] }
+
+[dev-dependencies]
+sha3 = "0.10"

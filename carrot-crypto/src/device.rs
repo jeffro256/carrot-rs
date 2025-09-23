@@ -1,3 +1,5 @@
+use core::fmt::{Debug, Display};
+
 use curve25519_dalek::{EdwardsPoint, MontgomeryPoint};
 
 use crate::core_types::*;
@@ -8,8 +10,16 @@ pub enum ErrorKind {
     PasswordNeeded,
 }
 
+#[derive(Debug)]
 pub struct Error {
     kind: ErrorKind,
+}
+
+/// @TODO: real display
+impl Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        Debug::fmt(&self.kind, f)
+    }
 }
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -20,6 +30,7 @@ pub trait ViewIncomingKeyDevice {
      *   kvP = k_v * P
      * return: true on success, false on failure (e.g. unable to decompress point)
      */
+    #[allow(non_snake_case)]
     fn view_key_scalar_mult_ed25519(&self, P: &EdwardsPoint) -> Result<EdwardsPoint>;
 
     /**
@@ -27,6 +38,7 @@ pub trait ViewIncomingKeyDevice {
      *   kvD = k_v * D
      * return: true on success, false on failure (e.g. unable to decompress point)
      */
+    #[allow(non_snake_case)]
     fn view_key_scalar_mult_x25519(&self, D: &MontgomeryPoint) -> Result<MontgomeryECDH>;
 
     /**

@@ -7,7 +7,7 @@ use crate::device::ViewBalanceSecretDevice;
 use crate::device::ViewIncomingKeyDevice;
 use crate::enote::CarrotCoinbaseEnoteV1;
 use crate::math_utils::is_invalid_or_has_torsion;
-use crate::payment_proposal::*;
+use crate::payments::*;
 use crate::permutate::apply_permutation_backwards;
 use crate::random::new_random;
 use crate::random::Random;

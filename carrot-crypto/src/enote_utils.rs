@@ -168,6 +168,10 @@ pub fn make_carrot_amount_blinding_factor(s_sender_receiver: &SenderReceiverSecr
     AmountBlindingKey(ScalarSecret(derive_scalar(&transcript, &s_sender_receiver.0.0)))
 }
 
+pub fn make_carrot_amount_commitment(amount: Amount, amount_blinding_factor: &AmountBlindingKey) -> AmountCommitment {
+    AmountCommitment(commit(amount, &amount_blinding_factor.0.0))
+}
+
 pub fn make_carrot_anchor_encryption_mask(s_sender_receiver: &SenderReceiverSecret,
     onetime_address: &OutputPubkey) -> EncryptedJanusAnchor
 {

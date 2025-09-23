@@ -1,6 +1,3 @@
-use curve25519_dalek::EdwardsPoint;
-use group::GroupEncoding;
-
 use crate::account::make_carrot_subaddress_scalar;
 use crate::core_types::*;
 use crate::device::*;
@@ -27,8 +24,8 @@ impl CarrotDestinationV1 {
         }
     }
 
-    pub fn make_subaddress<G: GenerateAddressSecretDevice>(account_spend_pubkey: AddressSpendPubkey,
-        account_view_pubkey: AddressViewPubkey,
+    pub fn make_subaddress<G: GenerateAddressSecretDevice>(account_spend_pubkey: &AddressSpendPubkey,
+        account_view_pubkey: &AddressViewPubkey,
         s_generate_address_dev: &G,
         major_index: u32,
         minor_index: u32) -> Option<Self>
