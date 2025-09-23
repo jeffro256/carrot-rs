@@ -1,10 +1,10 @@
-mod utils;
+mod common;
+use crate::common::random::gen_random;
 
 use carrot_crypto::account::make_carrot_account_view_pubkey;
 use carrot_crypto::*;
 use curve25519_dalek::EdwardsPoint;
 use group::GroupEncoding;
-use utils::gen_random;
 
 #[test]
 fn ecdh_cryptonote_completeness() {

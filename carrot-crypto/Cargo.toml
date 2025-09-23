@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-blake2 = "0.10" 
+blake2 = "0.10"
 curve25519-dalek = { version = "4", default-features = false, features = ["alloc", "rand_core", "zeroize"] }
 generic-array = "0.14"
 group = "0.13"

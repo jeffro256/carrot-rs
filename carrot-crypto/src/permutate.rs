@@ -1,3 +1,34 @@
+/**
+ * Copyright (c) 2017-2022 Jeremy Salwen and contributors
+ *
+ * Permission is hereby granted, free of charge, to any
+ * person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the
+ * Software without restriction, including without
+ * limitation the rights to use, copy, modify, merge,
+ * publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software
+ * is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice
+ * shall be included in all copies or substantial portions
+ * of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ * ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+ * TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+ * SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+ * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+// Adapted from crate permutation, function permutation::Permutation::apply_slice_bkwd_in_place()
+// https://docs.rs/permutation/0.4.1/src/permutation/permutation.rs.html#400
+
 use core::ops::IndexMut;
 
 // For the in place methods, we apply each cycle in the permutation in turn, marking the indices with their MSB when
@@ -11,8 +42,6 @@ fn idx_is_marked(idx: usize) -> bool {
     (idx & (isize::min_value() as usize)) != 0
 }
 
-// Adapted from crate permutation, function permutation::Permutation::apply_slice_bkwd_in_place()
-// https://docs.rs/permutation/0.4.1/src/permutation/permutation.rs.html#400
 pub(crate) fn apply_permutation_backwards<P, T>(permutation: &mut P, data: &mut [T])
 where
     P: IndexMut<usize, Output = usize>

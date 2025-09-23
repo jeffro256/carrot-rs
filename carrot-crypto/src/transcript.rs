@@ -31,7 +31,7 @@ macro_rules! make_carrot_transcript {
             assert!($domain_sep.is_ascii());
             const TRANSCRIPT_LEN: usize = calculate_carrot_transcript_len!($domain_sep, $($trans_type),*);
             let mut transcript = [0u8; TRANSCRIPT_LEN];
-            transcript[0] = TRANSCRIPT_LEN as u8;
+            transcript[0] = ($domain_sep.len()) as u8;
             transcript[1..($domain_sep.len()+1)].copy_from_slice($domain_sep.as_bytes());
             {
                 #![allow(unused_mut)]

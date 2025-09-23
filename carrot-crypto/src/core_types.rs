@@ -13,7 +13,7 @@ pub const INPUT_CONTEXT_BYTES: usize = 1 + 32;
 
 macro_rules! define_tiny_type {
     ($tiny:ident, $base:ty, $($extra_derivs:ident),*) => {
-        #[derive(Clone, Debug, PartialEq, Eq, Zeroize, $($extra_derivs),*)]
+        #[derive(Clone, Debug, Hash, PartialEq, Eq, Zeroize, $($extra_derivs),*)]
         pub struct $tiny(pub $base);
         impl Random for $tiny {
             type Params = <$base as Random>::Params;

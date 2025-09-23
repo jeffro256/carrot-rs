@@ -1,15 +1,13 @@
-mod keys;
-mod utils;
+mod common;
+use crate::common::keys::{AddressDeriveType, MockKeys};
+use crate::common::random::{gen_random, gen_random_with_params};
 
 use carrot_crypto::*;
-use keys::{AddressDeriveType, MockKeys};
-
-use utils::*;
 
 #[test]
 fn main_address_normal_scan_completeness()
 {
-    let keys: MockKeys = utils::gen_random_with_params(AddressDeriveType::Carrot);
+    let keys: MockKeys = gen_random_with_params(AddressDeriveType::Carrot);
 
     let main_address = keys.main_address(None);
 
@@ -52,12 +50,10 @@ fn main_address_normal_scan_completeness()
     assert_eq!(CarrotEnoteType::Payment, recovered_enote_type);
 
     // check spendability
-    /*
-    assert!(keys.can_open_fcmp_onetime_address(recovered_address_spend_pubkey,
-        recovered_sender_extension_g,
-        recovered_sender_extension_t,
-        enote_proposal.enote.onetime_address));
-    */
+    assert!(keys.can_open_fcmp_onetime_address(&recovered_address_spend_pubkey,
+        &recovered_sender_extension_g,
+        &recovered_sender_extension_t,
+        &enote_proposal.enote.onetime_address));
 }
 
 /*
