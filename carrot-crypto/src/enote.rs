@@ -10,8 +10,7 @@ use crate::core_types::*;
 // - ephemeral pubkey
 // - tx first key image
 ///
-pub struct CarrotEnoteV1
-{
+pub struct CarrotEnoteV1 {
     /// K_o
     pub onetime_address: OutputPubkey,
     /// C_a
@@ -25,7 +24,7 @@ pub struct CarrotEnoteV1
     /// D_e
     pub enote_ephemeral_pubkey: EnoteEphemeralPubkey,
     /// L_0
-    pub tx_first_key_image: KeyImage
+    pub tx_first_key_image: KeyImage,
 }
 
 ////
@@ -37,8 +36,7 @@ pub struct CarrotEnoteV1
 // - ephemeral pubkey
 // - block index
 ///
-pub struct CarrotCoinbaseEnoteV1
-{
+pub struct CarrotCoinbaseEnoteV1 {
     /// K_o
     pub onetime_address: OutputPubkey,
     /// a

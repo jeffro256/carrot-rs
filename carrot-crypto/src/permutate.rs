@@ -25,10 +25,8 @@
  * IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-
 // Adapted from crate permutation, function permutation::Permutation::apply_slice_bkwd_in_place()
 // https://docs.rs/permutation/0.4.1/src/permutation/permutation.rs.html#400
-
 use core::ops::IndexMut;
 
 // For the in place methods, we apply each cycle in the permutation in turn, marking the indices with their MSB when
@@ -44,7 +42,7 @@ fn idx_is_marked(idx: usize) -> bool {
 
 pub(crate) fn apply_permutation_backwards<P, T>(permutation: &mut P, data: &mut [T])
 where
-    P: IndexMut<usize, Output = usize>
+    P: IndexMut<usize, Output = usize>,
 {
     assert!(data.len() <= isize::max_value() as usize);
 

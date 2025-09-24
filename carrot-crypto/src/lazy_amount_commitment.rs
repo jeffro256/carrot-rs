@@ -4,7 +4,7 @@ use crate::math_utils::*;
 pub enum LazyAmountCommitment {
     Closed(AmountCommitment),
     Open(Amount, AmountBlindingKey),
-    CleartextOpen(Amount)
+    CleartextOpen(Amount),
 }
 
 impl LazyAmountCommitment {
@@ -12,7 +12,7 @@ impl LazyAmountCommitment {
         match self {
             Self::Closed(x) => x.clone(),
             Self::Open(a, z) => AmountCommitment(commit(*a, &z.0.0)),
-            Self::CleartextOpen(a) => AmountCommitment(zero_commit(*a))
+            Self::CleartextOpen(a) => AmountCommitment(zero_commit(*a)),
         }
     }
 }

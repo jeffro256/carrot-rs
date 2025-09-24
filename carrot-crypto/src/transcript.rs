@@ -49,6 +49,6 @@ macro_rules! make_carrot_transcript {
     };
 }
 
-pub(crate) use calculate_carrot_transcript_len_types_only;
 pub(crate) use calculate_carrot_transcript_len;
+pub(crate) use calculate_carrot_transcript_len_types_only;
 pub(crate) use make_carrot_transcript;

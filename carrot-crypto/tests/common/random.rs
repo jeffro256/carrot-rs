@@ -1,17 +1,19 @@
+use carrot_crypto::random::{Random, new_random};
 use carrot_crypto::*;
-use carrot_crypto::random::{new_random, Random};
 
 use crate::common::keys::{SubaddressIndex, SubaddressIndexExtended};
 use crate::common::{MAX_SUBADDRESS_MAJOR_INDEX, MAX_SUBADDRESS_MINOR_INDEX};
 
 pub fn gen_random<R>() -> R
-    where R: Random<Params = ()>
+where
+    R: Random<Params = ()>,
 {
     new_random(&mut rand_core::OsRng)
 }
 
 pub fn gen_random_with_params<R>(p: R::Params) -> R
-    where R: Random
+where
+    R: Random,
 {
     R::new_random_with_params(&mut rand_core::OsRng, p)
 }
@@ -25,9 +27,12 @@ pub fn gen_subaddress_index_minor() -> u32 {
 }
 
 pub fn gen_subaddress_index() -> SubaddressIndexExtended {
-    SubaddressIndexExtended{
-        index: SubaddressIndex{ major: gen_subaddress_index_major(), minor: gen_subaddress_index_minor()},
-        derive_type: None
+    SubaddressIndexExtended {
+        index: SubaddressIndex {
+            major: gen_subaddress_index_major(),
+            minor: gen_subaddress_index_minor(),
+        },
+        derive_type: None,
     }
 }
 
