@@ -55,9 +55,6 @@ pub struct MockKeys
 }
 
 impl MockKeys {
-    const MAX_SUBADDRESS_MAJOR_INDEX: u32 = 5;
-    const MAX_SUBADDRESS_MINOR_INDEX: u32 = 20;
-
     pub fn main_address(&self, derive_type: Option<AddressDeriveType>) -> CarrotDestinationV1 {
         let account_spend_pubkey = match self.resolve_derive_type(derive_type) {
             AddressDeriveType::Carrot => &self.carrot_account_spend_pubkey,
@@ -298,8 +295,8 @@ impl MockKeys {
         // derive subaddress map, Carrot and Legacy
         let mut subaddress_map = HashMap::new();
         let derive_types = [AddressDeriveType::Carrot, AddressDeriveType::Legacy];
-        for major_index in 0..Self::MAX_SUBADDRESS_MAJOR_INDEX {
-            for minor_index in 0..Self::MAX_SUBADDRESS_MINOR_INDEX {
+        for major_index in 0..crate::common::MAX_SUBADDRESS_MAJOR_INDEX {
+            for minor_index in 0..crate::common::MAX_SUBADDRESS_MINOR_INDEX {
                 for derive_type in derive_types.iter() {
                     let address_spend_pubkey = match derive_type {
                         AddressDeriveType::Carrot => if major_index != 0 || minor_index != 0 {
