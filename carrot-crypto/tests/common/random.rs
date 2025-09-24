@@ -1,6 +1,7 @@
 use carrot_crypto::*;
 use carrot_crypto::random::{new_random, Random};
 
+use crate::common::keys::{SubaddressIndex, SubaddressIndexExtended};
 use crate::common::{MAX_SUBADDRESS_MAJOR_INDEX, MAX_SUBADDRESS_MINOR_INDEX};
 
 pub fn gen_random<R>() -> R
@@ -16,11 +17,18 @@ pub fn gen_random_with_params<R>(p: R::Params) -> R
 }
 
 pub fn gen_subaddress_index_major() -> u32 {
-    gen_random::<u32>() % (MAX_SUBADDRESS_MAJOR_INDEX + 1)
+    1 + gen_random::<u32>() % MAX_SUBADDRESS_MAJOR_INDEX
 }
 
 pub fn gen_subaddress_index_minor() -> u32 {
-    gen_random::<u32>() % (MAX_SUBADDRESS_MINOR_INDEX + 1)
+    1 + gen_random::<u32>() % MAX_SUBADDRESS_MINOR_INDEX
+}
+
+pub fn gen_subaddress_index() -> SubaddressIndexExtended {
+    SubaddressIndexExtended{
+        index: SubaddressIndex{ major: gen_subaddress_index_major(), minor: gen_subaddress_index_minor()},
+        derive_type: None
+    }
 }
 
 pub fn gen_non_null_payment_id() -> PaymentId {

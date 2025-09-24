@@ -1,6 +1,6 @@
 mod common;
 use crate::common::keys::{AddressDeriveType, MockKeys, SubaddressIndex, SubaddressIndexExtended};
-use crate::common::random::{gen_non_null_payment_id, gen_random, gen_random_with_params, gen_subaddress_index_major, gen_subaddress_index_minor};
+use crate::common::random::{gen_non_null_payment_id, gen_random, gen_random_with_params, gen_subaddress_index, gen_subaddress_index_major, gen_subaddress_index_minor};
 
 use carrot_crypto::*;
 
@@ -59,12 +59,7 @@ fn main_address_normal_scan_completeness() {
 fn subaddress_normal_scan_completeness() {
     let keys: MockKeys = gen_random_with_params(AddressDeriveType::Carrot);
 
-    let j_major = gen_subaddress_index_major();
-    let j_minor = gen_subaddress_index_minor();
-    let subaddr_index = SubaddressIndexExtended{
-        index: SubaddressIndex{major: j_major, minor: j_minor},
-        derive_type: None
-    };
+    let subaddr_index = gen_subaddress_index();
 
     let subaddress = keys.subaddress(&subaddr_index);
 
@@ -217,84 +212,68 @@ fn main_address_special_scan_completeness() {
     }
 }
 
-/*
-TEST(carrot_core, subaddress_special_scan_completeness)
-{
-    mock::mock_carrot_and_legacy_keys keys;
-    keys.generate();
+#[test]
+fn subaddress_special_scan_completeness() {
+    let keys: MockKeys = gen_random_with_params(AddressDeriveType::Carrot);
 
-    const uint32_t j_major = crypto::rand_idx(mock::MAX_SUBADDRESS_MAJOR_INDEX);
-    const uint32_t j_minor = crypto::rand_idx(mock::MAX_SUBADDRESS_MINOR_INDEX);
+    let subaddr_index = gen_subaddress_index();
 
-    const CarrotDestinationV1 subaddress = keys.subaddress({{j_major, j_minor}});
+    let subaddress = keys.subaddress(&subaddr_index);
 
     // try once with PAYMENT, once with CHANGE
-    for (int i = 0; i < 2; ++i)
+    for enote_type in [CarrotEnoteType::Payment, CarrotEnoteType::Change].into_iter() 
     {
-        const CarrotEnoteType enote_type = i ? CarrotEnoteType::PAYMENT : CarrotEnoteType::CHANGE;
-
-        const CarrotPaymentProposalSelfSendV1 proposal = CarrotPaymentProposalSelfSendV1{
-            .destination_address_spend_pubkey = subaddress.address_spend_pubkey,
-            .amount = crypto::rand<rct::xmr_amount>(),
-            .enote_type = enote_type,
-            .enote_ephemeral_pubkey = gen_x25519_pubkey(),
+        let proposal = payments::CarrotPaymentProposalSelfSendV1{
+            destination_address_spend_pubkey: subaddress.address_spend_pubkey.clone(),
+            amount: gen_random(),
+            enote_type: enote_type,
+            enote_ephemeral_pubkey: Some(gen_random()),
+            internal_message: None
         };
 
-        const crypto::key_image tx_first_key_image = rct::rct2ki(rct::pkGen()); 
+        let tx_first_key_image = gen_random(); 
 
-        RCTOutputEnoteProposal enote_proposal;
-        get_output_proposal_special_v1(proposal,
-            keys.k_view_incoming_dev,
-            tx_first_key_image,
-            std::nullopt,
-            enote_proposal);
+        let enote_proposal = proposal.get_special_output_proposal(
+            &keys.k_view_incoming, tx_first_key_image, &None)
+            .expect("get_special_output_proposal");
 
         assert_eq!(proposal.amount, enote_proposal.amount);
-        const rct::key recomputed_amount_commitment = enote_utils::make_carrot_amount_commitment(enote_proposal.amount, rct::sk2rct(enote_proposal.amount_blinding_factor));
+        let recomputed_amount_commitment = enote_utils::make_carrot_amount_commitment(
+            enote_proposal.amount, &enote_proposal.amount_blinding_factor);
         assert_eq!(enote_proposal.enote.amount_commitment, recomputed_amount_commitment);
 
-        mx25519_pubkey s_sender_receiver_unctx;
-        make_carrot_uncontextualized_shared_key_receiver(keys.legacy_acb.get_keys().m_view_secret_key,
-            enote_proposal.enote.enote_ephemeral_pubkey,
-            s_sender_receiver_unctx);
+        let s_sender_receiver_unctx = scan::make_carrot_uncontextualized_shared_key_receiver(
+                &keys.k_view_incoming,
+                &enote_proposal.enote.enote_ephemeral_pubkey)
+            .expect("make_carrot_uncontextualized_shared_key_receiver");
 
-        crypto::secret_key recovered_sender_extension_g;
-        crypto::secret_key recovered_sender_extension_t;
-        crypto::public_key recovered_address_spend_pubkey;
-        rct::xmr_amount recovered_amount;
-        crypto::secret_key recovered_amount_blinding_factor;
-        payment_id_t recovered_payment_id;
-        CarrotEnoteType recovered_enote_type;
-        const bool scan_success = try_scan_carrot_enote_external_receiver(enote_proposal.enote,
-            std::nullopt,
-            s_sender_receiver_unctx,
-            {&keys.carrot_account_spend_pubkey, 1},
-            keys.k_view_incoming_dev,
-            recovered_sender_extension_g,
-            recovered_sender_extension_t,
-            recovered_address_spend_pubkey,
-            recovered_amount,
-            recovered_amount_blinding_factor,
-            recovered_payment_id,
-            recovered_enote_type);
-        
-        assert!(scan_success);
+        let (recovered_sender_extension_g, recovered_sender_extension_t,
+            recovered_address_spend_pubkey, recovered_amount,
+            recovered_amount_blinding_factor, recovered_payment_id,
+            recovered_enote_type)
+                = scan::try_scan_carrot_enote_external_receiver(&enote_proposal.enote,
+                    None,
+                    &s_sender_receiver_unctx,
+                    core::slice::from_ref(&keys.carrot_account_spend_pubkey),
+                    &keys.k_view_incoming)
+            .expect("try_scan_carrot_enote_external_receiver");
 
         // check recovered data
         assert_eq!(proposal.destination_address_spend_pubkey, recovered_address_spend_pubkey);
         assert_eq!(proposal.amount, recovered_amount);
         assert_eq!(enote_proposal.amount_blinding_factor, recovered_amount_blinding_factor);
-        assert_eq!(null_payment_id, recovered_payment_id);
+        assert_eq!(NULL_PAYMENT_ID, recovered_payment_id);
         assert_eq!(enote_type, recovered_enote_type);
 
         // check spendability
-        assert!(keys.can_open_fcmp_onetime_address(recovered_address_spend_pubkey,
-            recovered_sender_extension_g,
-            recovered_sender_extension_t,
-            enote_proposal.enote.onetime_address));
+        assert!(keys.can_open_fcmp_onetime_address(&recovered_address_spend_pubkey,
+            &recovered_sender_extension_g,
+            &recovered_sender_extension_t,
+            &enote_proposal.enote.onetime_address));
     }
 }
 
+/*
 TEST(carrot_core, main_address_internal_scan_completeness)
 {
     mock::mock_carrot_and_legacy_keys keys;
