@@ -1,3 +1,4 @@
+use carrot_crypto::*;
 use carrot_crypto::random::{new_random, Random};
 
 use crate::common::{MAX_SUBADDRESS_MAJOR_INDEX, MAX_SUBADDRESS_MINOR_INDEX};
@@ -20,4 +21,13 @@ pub fn gen_subaddress_index_major() -> u32 {
 
 pub fn gen_subaddress_index_minor() -> u32 {
     gen_random::<u32>() % (MAX_SUBADDRESS_MINOR_INDEX + 1)
+}
+
+pub fn gen_non_null_payment_id() -> PaymentId {
+    loop {
+        let res = gen_random();
+        if res != NULL_PAYMENT_ID {
+            return res;
+        }
+    }
 }

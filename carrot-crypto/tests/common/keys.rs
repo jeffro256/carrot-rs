@@ -192,6 +192,15 @@ impl MockKeys {
         sender_extension_t: &OnetimeExtensionT,
         onetime_address: &OutputPubkey) -> bool
     {
+        // first test that K^j_s + k^g_o G + k^t_o T ?= K_o
+        // otherwise, there's a problem with the scan funcs
+        let onetime_extension = scalar_mul_gt(&sender_extension_g.0.0,
+            &sender_extension_t.0.0);
+        let recomputed_onetime_address =
+            (EdwardsPoint::from_bytes(&address_spend_pubkey.0.0).unwrap()
+            + EdwardsPoint::from_bytes(&onetime_extension.0).unwrap()).compress();
+        assert_eq!(recomputed_onetime_address, onetime_address.0);
+
         let Some((x, y)) = self.try_searching_for_opening_for_onetime_address(
             address_spend_pubkey,
             sender_extension_g,
@@ -295,8 +304,8 @@ impl MockKeys {
         // derive subaddress map, Carrot and Legacy
         let mut subaddress_map = HashMap::new();
         let derive_types = [AddressDeriveType::Carrot, AddressDeriveType::Legacy];
-        for major_index in 0..crate::common::MAX_SUBADDRESS_MAJOR_INDEX {
-            for minor_index in 0..crate::common::MAX_SUBADDRESS_MINOR_INDEX {
+        for major_index in 0..=crate::common::MAX_SUBADDRESS_MAJOR_INDEX {
+            for minor_index in 0..=crate::common::MAX_SUBADDRESS_MINOR_INDEX {
                 for derive_type in derive_types.iter() {
                     let address_spend_pubkey = match derive_type {
                         AddressDeriveType::Carrot => if major_index != 0 || minor_index != 0 {

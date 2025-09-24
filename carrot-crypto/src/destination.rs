@@ -4,7 +4,7 @@ use crate::device::*;
 use crate::math_utils::scalar_mul_key_vartime;
 use crate::random::Random;
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CarrotDestinationV1 {
     pub address_spend_pubkey: AddressSpendPubkey,
     pub address_view_pubkey: AddressViewPubkey,
