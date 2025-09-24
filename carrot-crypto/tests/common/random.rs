@@ -39,3 +39,7 @@ pub fn gen_non_null_payment_id() -> PaymentId {
         }
     }
 }
+
+pub fn gen_block_index() -> BlockIndex {
+    1 + gen_random::<BlockIndex>() % 5000000
+}

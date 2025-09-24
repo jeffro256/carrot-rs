@@ -380,50 +380,41 @@ fn subaddress_internal_scan_completeness() {
     }
 }
 
-/*
-TEST(carrot_core, main_address_coinbase_scan_completeness)
-{
-    mock::mock_carrot_and_legacy_keys keys;
-    keys.generate();
+#[test]
+fn main_address_coinbase_scan_completeness() {
+    let keys = &*BOB_CARROT_KEYS;
 
-    const CarrotDestinationV1 main_address = keys.cryptonote_address();
+    let main_address = keys.main_address(None);
 
-    const CarrotPaymentProposalV1 proposal = CarrotPaymentProposalV1{
-        .destination = main_address,
-        .amount = crypto::rand<rct::xmr_amount>(),
-        .randomness = gen_janus_anchor()
+    let proposal = payments::CarrotPaymentProposalV1{
+        destination: main_address,
+        amount: gen_random(),
+        randomness: gen_random()
     };
 
-    const uint64_t block_index = crypto::rand<uint64_t>();
+    let block_index = gen_block_index();
 
-    CarrotCoinbaseEnoteV1 enote;
-    get_coinbase_output_proposal_v1(proposal,
-        block_index,
-        enote);
+    let enote = proposal.get_coinbase_output_proposal(block_index).expect("get_coinbase_output_proposal");
 
     assert_eq!(proposal.amount, enote.amount);
 
-    mx25519_pubkey s_sender_receiver_unctx;
-    make_carrot_uncontextualized_shared_key_receiver(keys.k_view_incoming_dev,
-        enote.enote_ephemeral_pubkey,
-        s_sender_receiver_unctx);
+    let s_sender_receiver_unctx = scan::make_carrot_uncontextualized_shared_key_receiver(
+        &keys.k_view_incoming,
+        &enote.enote_ephemeral_pubkey).expect("make_carrot_uncontextualized_shared_key_receiver");
 
-    crypto::secret_key recovered_sender_extension_g;
-    crypto::secret_key recovered_sender_extension_t;
-    const bool scan_success = try_scan_carrot_coinbase_enote_receiver(enote,
-        s_sender_receiver_unctx,
-        keys.carrot_account_spend_pubkey,
-        recovered_sender_extension_g,
-        recovered_sender_extension_t);
+    let (recovered_sender_extension_g, recovered_sender_extension_t, recovered_address_spend_pubkey)
+        = scan::try_scan_carrot_coinbase_enote_receiver(&enote,
+            &s_sender_receiver_unctx,
+            core::slice::from_ref(&keys.carrot_account_spend_pubkey))
+        .expect("try_scan_carrot_coinbase_enote_receiver");
 
-    assert!(scan_success);
+    // check recovered data
+    assert_eq!(proposal.destination.address_spend_pubkey, recovered_address_spend_pubkey);
 
     // check spendability
     assert!(keys.can_open_fcmp_onetime_address(
-        keys.carrot_account_spend_pubkey,
-        recovered_sender_extension_g,
-        recovered_sender_extension_t,
-        enote.onetime_address));
+        &keys.carrot_account_spend_pubkey,
+        &recovered_sender_extension_g,
+        &recovered_sender_extension_t,
+        &enote.onetime_address));
 }
-
-        */
