@@ -1,12 +1,17 @@
 mod common;
-use crate::common::keys::{AddressDeriveType, MockKeys, SubaddressIndex, SubaddressIndexExtended};
-use crate::common::random::{gen_non_null_payment_id, gen_random, gen_random_with_params, gen_subaddress_index, gen_subaddress_index_major, gen_subaddress_index_minor};
+use crate::common::keys::*;
+use crate::common::random::*;
 
 use carrot_crypto::*;
 
+use std::sync::LazyLock;
+
+static BOB_CARROT_KEYS: LazyLock<MockKeys> = LazyLock::new(||
+    { gen_random_with_params(AddressDeriveType::Carrot) });
+
 #[test]
 fn main_address_normal_scan_completeness() {
-    let keys: MockKeys = gen_random_with_params(AddressDeriveType::Carrot);
+    let keys = &*BOB_CARROT_KEYS;
 
     let main_address = keys.main_address(None);
 
@@ -57,7 +62,7 @@ fn main_address_normal_scan_completeness() {
 
 #[test]
 fn subaddress_normal_scan_completeness() {
-    let keys: MockKeys = gen_random_with_params(AddressDeriveType::Carrot);
+    let keys = &*BOB_CARROT_KEYS;
 
     let subaddr_index = gen_subaddress_index();
 
@@ -107,7 +112,7 @@ fn subaddress_normal_scan_completeness() {
 
 #[test]
 fn integrated_address_normal_scan_completeness() {
-    let keys: MockKeys = gen_random_with_params(AddressDeriveType::Carrot);
+    let keys = &*BOB_CARROT_KEYS;
 
     let integrated_address = keys.integrated_address(gen_non_null_payment_id(), None);
     assert_ne!(NULL_PAYMENT_ID, integrated_address.payment_id);
@@ -157,7 +162,7 @@ fn integrated_address_normal_scan_completeness() {
 
 #[test]
 fn main_address_special_scan_completeness() {
-    let keys: MockKeys = gen_random_with_params(AddressDeriveType::Carrot);
+    let keys = &*BOB_CARROT_KEYS;
 
     // try once with PAYMENT, once with CHANGE
     for enote_type in [CarrotEnoteType::Payment, CarrotEnoteType::Change].into_iter()
@@ -214,7 +219,7 @@ fn main_address_special_scan_completeness() {
 
 #[test]
 fn subaddress_special_scan_completeness() {
-    let keys: MockKeys = gen_random_with_params(AddressDeriveType::Carrot);
+    let keys = &*BOB_CARROT_KEYS;
 
     let subaddr_index = gen_subaddress_index();
 
