@@ -4,6 +4,7 @@ use crate::device::*;
 use crate::enote_utils::*;
 
 impl ViewIncomingKeyDevice for ViewIncomingKey {
+    #[allow(non_snake_case)]
     fn view_key_scalar_mult_ed25519(
         &self,
         P: &curve25519_dalek::EdwardsPoint,
@@ -11,6 +12,7 @@ impl ViewIncomingKeyDevice for ViewIncomingKey {
         Ok(self.0.0 * P)
     }
 
+    #[allow(non_snake_case)]
     fn view_key_scalar_mult_x25519(
         &self,
         D: &curve25519_dalek::MontgomeryPoint,

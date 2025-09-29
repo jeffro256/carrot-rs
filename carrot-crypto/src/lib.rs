@@ -19,6 +19,8 @@ pub mod random;
 pub mod scan;
 mod scan_unsafe;
 mod transcript;
+#[cfg(test)]
+mod unit_testing;
 
 pub use core_types::*;
 pub use destination::*;

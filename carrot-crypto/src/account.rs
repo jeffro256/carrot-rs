@@ -98,3 +98,19 @@ pub fn make_carrot_subaddress_scalar(
         &s_address_generator.0.0,
     )))
 }
+
+#[cfg(test)]
+mod test {
+    use crate::account::*;
+    use crate::unit_testing::*;
+
+    #[test]
+    fn converge_make_carrot_provespend_key() {
+        assert_eq_hex!(
+            "f10bf01839ea216e5d70b7c9ceaa8b8e9a432b5e98e6e48a8043ffb3fa229f0b",
+            make_carrot_provespend_key(&hex_into!(
+                "6e02e67b303dc713276bb1a4d70b0083b78e4f50e34e209da9f0377cdc3d376e"
+            ))
+        );
+    }
+}

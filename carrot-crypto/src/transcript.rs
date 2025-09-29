@@ -5,6 +5,11 @@ pub trait ToTranscriptBytes {
     fn to_transcript_bytes(&self) -> GenericArray<u8, Self::Len>;
 }
 
+#[cfg(test)]
+pub trait FromTranscriptBytes: ToTranscriptBytes + Sized {
+    fn from_transcript_bytes(bytes: GenericArray<u8, Self::Len>) -> Option<Self>;
+}
+
 macro_rules! calculate_carrot_transcript_len_types_only {
     () => { typenum::U0 };
     ($trans_type:path) => { <$trans_type as ToTranscriptBytes>::Len };

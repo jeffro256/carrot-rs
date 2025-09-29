@@ -1,3 +1,6 @@
+#![cfg(test)]
+#![allow(dead_code)]
+
 pub mod keys;
 pub mod math;
 pub mod random;

@@ -1,8 +1,11 @@
 use core::ops::BitXor;
 use curve25519_dalek::{MontgomeryPoint, Scalar, edwards::CompressedEdwardsY};
+use generic_array::GenericArray;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::random::Random;
+#[cfg(test)]
+use crate::transcript::FromTranscriptBytes;
 use crate::transcript::ToTranscriptBytes;
 
 pub const JANUS_ANCHOR_BYTES: usize = 16;
@@ -25,6 +28,12 @@ macro_rules! define_tiny_type {
             type Len = <$base as ToTranscriptBytes>::Len;
             fn to_transcript_bytes(&self) -> generic_array::GenericArray<u8, Self::Len> {
                 self.0.to_transcript_bytes()
+            }
+        }
+        #[cfg(test)]
+        impl FromTranscriptBytes for $tiny {
+            fn from_transcript_bytes(bytes: GenericArray<u8, Self::Len>) -> Option<Self> {
+                Some($tiny(<$base>::from_transcript_bytes(bytes)?))
             }
         }
     };
