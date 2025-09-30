@@ -442,3 +442,167 @@ pub fn verify_carrot_normal_janus_protection(
     // D_e' ?= D_e
     &nominal_enote_ephemeral_pubkey.0 == &enote_ephemeral_pubkey.0
 }
+
+#[cfg(test)]
+mod test {
+    use crate::enote_utils::*;
+    use crate::unit_testing::*;
+
+    #[test]
+    fn converge_make_carrot_enote_ephemeral_privkey() {
+        assert_eq_hex!(
+            "6d4645a0e398ff430f68eaa78240dd2c04051e9a50438cd9c9c3c0e12af68b0b",
+            make_carrot_enote_ephemeral_privkey(
+                &hex_into!("caee1381775487a0982557f0d2680b55"),
+                &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
+                &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
+                &hex_into!("4321734f56621440")));
+    }
+
+    #[test]
+    fn converge_make_carrot_enote_ephemeral_pubkey_cryptonote() {
+        assert_eq_hex!(
+            "2987777565c02409dfe871cc27b2334f5ade9d4ad014012c568367b80e99c666",
+            make_carrot_enote_ephemeral_pubkey_cryptonote(
+                &hex_into!("f57ff2d7c898b755137b69e8d826801945ed72e9951850de908e9d645a0bb00d")));
+    }
+
+    #[test]
+    fn converge_make_carrot_enote_ephemeral_pubkey_subaddress() {
+        assert_eq_hex!(
+            "d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55",
+            make_carrot_enote_ephemeral_pubkey_subaddress(
+                &hex_into!("f57ff2d7c898b755137b69e8d826801945ed72e9951850de908e9d645a0bb00d"),
+                &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0")
+            ).unwrap());
+    }
+
+    #[test]
+    fn converge_make_carrot_uncontextualized_shared_key_receiver() {
+        assert_eq_hex!(
+            "baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451",
+            make_carrot_uncontextualized_shared_key_receiver(
+                &hex_into!("60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200"),
+                &hex_into!("d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55")
+            ));
+    }
+
+    #[test]
+    fn converge_make_carrot_uncontextualized_shared_key_sender() {
+        assert_eq_hex!(
+            "baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451",
+            make_carrot_uncontextualized_shared_key_sender(
+                &hex_into!("f57ff2d7c898b755137b69e8d826801945ed72e9951850de908e9d645a0bb00d"),
+                &hex_into!("75b7bc7759da5d9ad5ff421650949b27a13ea369685eb4d1bd59abc518e25fe2")
+            ).unwrap());
+    }
+
+    #[test]
+    fn converge_make_carrot_sender_receiver_secret() {
+        assert_eq_hex!(
+            "232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c",
+            make_carrot_sender_receiver_secret(
+                &hex_into!("baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451"),
+                &hex_into!("d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55"),
+                &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7")
+            ));
+    }
+
+    #[test]
+    fn converge_make_carrot_amount_blinding_factor_payment() {
+        assert_eq_hex!(
+            "9fc3581e926a844877479d829ff9deeae17ce77feaf2c3c972923510e04f1f02",
+            make_carrot_amount_blinding_factor(
+                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
+                23000000000000,
+                &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
+                CarrotEnoteType::Payment
+            ));
+    }
+
+    #[test]
+    fn converge_make_carrot_amount_blinding_factor_change() {
+        assert_eq_hex!(
+            "dda34eac46030e4084f5a2c808d0a82ffaa82cbf01d4a74d7ee0d4fe72c31a0f",
+            make_carrot_amount_blinding_factor(
+                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
+                23000000000000,
+                &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
+                CarrotEnoteType::Change
+            ));
+    }
+
+    #[test]
+    fn converge_make_carrot_amount_commitment() {
+        assert_eq_hex!(
+            "ca5f0fc2fe7a4fe628e6f08b2c0eb44f3af3b87e1619b2ed2de296f7e425512b",
+            make_carrot_amount_commitment(
+                23000000000000,
+                &hex_into!("9fc3581e926a844877479d829ff9deeae17ce77feaf2c3c972923510e04f1f02"),
+            ));
+    }
+
+    #[test]
+    fn converge_make_carrot_onetime_address() {
+        assert_eq_hex!(
+            "4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92",
+            make_carrot_onetime_address(
+                &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
+                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
+                &hex_into!("ca5f0fc2fe7a4fe628e6f08b2c0eb44f3af3b87e1619b2ed2de296f7e425512b")
+            ).unwrap());
+    }
+
+    #[test]
+    fn converge_make_carrot_view_tag() {
+        assert_eq_hex!(
+            "0176f6",
+            make_carrot_view_tag(
+                &hex_into!("baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451"),
+                &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
+                &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
+            ));
+    }
+
+    #[test]
+    fn converge_make_carrot_anchor_encryption_mask() {
+        assert_eq_hex!(
+            "52d95a8e441f26a056f55094938cbfa8",
+            make_carrot_anchor_encryption_mask(
+                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
+                &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
+            ));
+    }
+
+    #[test]
+    fn converge_make_carrot_amount_encryption_mask() {
+        assert_eq_hex!(
+            "98d25d1db65b6a3e",
+            make_carrot_amount_encryption_mask(
+                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
+                &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
+            ));
+    }
+
+    #[test]
+    fn converge_make_carrot_payment_id_encryption_mask() {
+        assert_eq_hex!(
+            "b57a1560e82e2483",
+            make_carrot_payment_id_encryption_mask(
+                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
+                &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
+            ));
+    }
+
+    #[test]
+    fn converge_make_carrot_janus_anchor_special() {
+        assert_eq_hex!(
+            "31afa8f580feaf736cd424ecc9ae5fd2",
+            make_carrot_janus_anchor_special(
+                &hex_into!("d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55"),
+                &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
+                &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92"),
+                &hex_into!("60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200")
+            ));
+    }
+}

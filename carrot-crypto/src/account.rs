@@ -113,4 +113,77 @@ mod test {
             ))
         );
     }
+
+    #[test]
+    fn converge_make_carrot_viewbalance_secret() {
+        assert_eq_hex!(
+            "154c5e01902b20acc8436c9aa06b40355d78dfda0fc6af3d53a2220f1363a0f5",
+            make_carrot_viewbalance_secret(&hex_into!(
+                "6e02e67b303dc713276bb1a4d70b0083b78e4f50e34e209da9f0377cdc3d376e"
+            ))
+        );
+    }
+
+    #[test]
+    fn converge_make_carrot_generateimage_key() {
+        assert_eq_hex!(
+            "336e3af233b3aa5bc95d5589aba67aab727727419899823acc6a6c4479e4ea04",
+            make_carrot_generateimage_key(&hex_into!(
+                "154c5e01902b20acc8436c9aa06b40355d78dfda0fc6af3d53a2220f1363a0f5"
+            ))
+        );
+    }
+
+    #[test]
+    fn converge_make_carrot_viewincoming_key() {
+        assert_eq_hex!(
+            "60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200",
+            make_carrot_viewincoming_key(&hex_into!(
+                "154c5e01902b20acc8436c9aa06b40355d78dfda0fc6af3d53a2220f1363a0f5"
+            ))
+        );
+    }
+
+    #[test]
+    fn converge_make_carrot_generateaddress_secret() {
+        assert_eq_hex!(
+            "593ece76c5d24cbfe3c7ac9e2d455cdd4b372c89584700bf1c2e7bef2b70a4d1",
+            make_carrot_generateaddress_secret(&hex_into!(
+                "154c5e01902b20acc8436c9aa06b40355d78dfda0fc6af3d53a2220f1363a0f5"
+            ))
+        );
+    }
+
+    #[test]
+    fn converge_make_carrot_spend_pubkey() {
+        assert_eq_hex!(
+            "c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f",
+            make_carrot_spend_pubkey(
+                &hex_into!("336e3af233b3aa5bc95d5589aba67aab727727419899823acc6a6c4479e4ea04"),
+                &hex_into!("f10bf01839ea216e5d70b7c9ceaa8b8e9a432b5e98e6e48a8043ffb3fa229f0b"))
+        );
+    }
+
+    #[test]
+    fn converge_make_carrot_index_extension_generator() {
+        assert_eq_hex!(
+            "79ad2383f44b4d26413adb7ae79c5658b2a8c20b6f5046bfa9f229bfcf1744a7",
+            make_carrot_index_extension_generator(
+                &hex_into!("593ece76c5d24cbfe3c7ac9e2d455cdd4b372c89584700bf1c2e7bef2b70a4d1"),
+                5,
+            16)
+        );
+    }
+
+    #[test]
+    fn converge_make_carrot_subaddress_scalar() {
+        assert_eq_hex!(
+            "25d97acc4f6b58478ee97ee9b308be756401130c1e9f3a48a5370c1a2ce0e50e",
+            make_carrot_subaddress_scalar(
+                &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f"),
+                &hex_into!("79ad2383f44b4d26413adb7ae79c5658b2a8c20b6f5046bfa9f229bfcf1744a7"),
+                5,
+                16)
+        );
+    }
 }

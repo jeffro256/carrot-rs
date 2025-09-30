@@ -108,3 +108,32 @@ impl Random for CarrotDestinationV1 {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::account::*;
+    use crate::destination::*;
+    use crate::transcript::*;
+    use crate::unit_testing::*;
+
+    #[test]
+    fn converge_make_subaddress() {
+        let s_generate_address: GenerateAddressSecret
+            = hex_into!("593ece76c5d24cbfe3c7ac9e2d455cdd4b372c89584700bf1c2e7bef2b70a4d1");
+
+        let subaddress = CarrotDestinationV1::make_subaddress(
+            &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f"),
+            &make_carrot_account_view_pubkey(
+                &hex_into!("60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200"),
+                &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f")),
+            &s_generate_address,
+            5,
+            16).expect("make_subaddress");
+        assert_eq_hex!(
+            "1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0",
+            subaddress.address_spend_pubkey);
+        assert_eq_hex!(
+            "75b7bc7759da5d9ad5ff421650949b27a13ea369685eb4d1bd59abc518e25fe2",
+            subaddress.address_view_pubkey);
+    }
+}
