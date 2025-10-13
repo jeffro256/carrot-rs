@@ -1,16 +1,17 @@
-pub use crate::as_crypto::{AsEdwardsPoint, AsMontgomeryPoint, AsScalar};
+pub use crate::as_crypto::{AsEdwardsPoint, AsScalar};
 pub use crate::random::Random;
 #[cfg(test)]
 pub use crate::transcript::FromTranscriptBytes;
 pub use crate::transcript::ToTranscriptBytes;
 
-pub use curve25519_dalek::{MontgomeryPoint, Scalar, edwards::CompressedEdwardsY};
+pub use curve25519_dalek::{Scalar, edwards::CompressedEdwardsY};
 pub use generic_array::GenericArray;
 pub use zeroize::Zeroize;
 
 macro_rules! define_tiny_type {
-    ($tiny:ident, $base:ty $(,$extra_derivs:ident)*) => {
+    ($tiny:ident, $doc:tt, $base:ty $(,$extra_derivs:ident)*) => {
         #[derive(Clone, Debug, Hash, PartialEq, Eq, Zeroize, $($extra_derivs),*)]
+        #[doc = $doc]
         pub struct $tiny($base);
         impl Random for $tiny {
             type Params = <$base as Random>::Params;
@@ -34,8 +35,8 @@ macro_rules! define_tiny_type {
 }
 
 macro_rules! define_tiny_edwards_type {
-    ($tiny:ident) => {
-        define_tiny_type! {$tiny, CompressedEdwardsY, Default}
+    ($tiny:ident, $doc:tt) => {
+        define_tiny_type! {$tiny, $doc, CompressedEdwardsY, Default}
         impl AsEdwardsPoint for $tiny {
             fn as_edwards_ref(&self) -> &CompressedEdwardsY {
                 &self.0
@@ -50,8 +51,8 @@ macro_rules! define_tiny_edwards_type {
 }
 
 macro_rules! define_tiny_montgomery_type {
-    ($tiny:ident, $($extra_derivs:ident),*) => {
-        define_tiny_type!{$tiny, MontgomeryPoint, Default $(,$extra_derivs)*}
+    ($tiny:ident, $doc:tt, $($extra_derivs:ident),*) => {
+        define_tiny_type!{$tiny, $doc, MontgomeryPoint, Default $(,$extra_derivs)*}
         impl AsMontgomeryPoint for $tiny {
             fn as_montgomery_ref(&self) -> &MontgomeryPoint {
                 &self.0
@@ -61,8 +62,8 @@ macro_rules! define_tiny_montgomery_type {
 }
 
 macro_rules! define_tiny_scalar_type {
-    ($tiny:ident) => {
-        define_tiny_type! {$tiny, Scalar, Default, ZeroizeOnDrop}
+    ($tiny:ident, $doc:tt) => {
+        define_tiny_type! {$tiny, $doc, Scalar, Default, ZeroizeOnDrop}
         impl AsScalar for $tiny {
             fn as_scalar_ref(&self) -> &Scalar {
                 &self.0
@@ -85,8 +86,8 @@ macro_rules! define_tiny_scalar_type {
 }
 
 macro_rules! define_tiny_byte_type {
-    ($tiny:ident, $size:expr $(,$extra_derivs:ident)*) => {
-        define_tiny_type!{$tiny, [u8; $size] $(,$extra_derivs)*}
+    ($tiny:ident, $doc:tt, $size:expr $(,$extra_derivs:ident)*) => {
+        define_tiny_type!{$tiny, $doc, [u8; $size] $(,$extra_derivs)*}
         impl Default for $tiny {
             fn default() -> Self {
                 Self([0u8; $size])

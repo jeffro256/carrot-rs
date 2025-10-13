@@ -4,8 +4,7 @@ use crate::random::Random;
 use crate::type_macros::*;
 use crate::*;
 
-/// legacy payment ID
-define_tiny_byte_type! {PaymentId, PAYMENT_ID_BYTES}
+define_tiny_byte_type! {PaymentId, "Short payment ID in an integrated address", PAYMENT_ID_BYTES}
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CarrotDestinationV1 {

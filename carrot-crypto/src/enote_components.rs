@@ -14,43 +14,39 @@ use crate::transcript::*;
 use crate::type_macros::*;
 use crate::*;
 
-define_tiny_edwards_type! {OutputPubkey}
-define_tiny_edwards_type! {AmountCommitment}
-define_tiny_edwards_type! {KeyImageGenerator}
-define_tiny_edwards_type! {KeyImage}
-define_tiny_edwards_type! {OnetimeExtension}
+define_tiny_edwards_type! {OutputPubkey, "ReRingCT transaction output pubkey / one-time address"}
+define_tiny_edwards_type! {AmountCommitment, "ReRingCT transaction output amount commitment"}
+define_tiny_edwards_type! {KeyImageGenerator, "ReRingCT key image generator, result of hash-to-point of an output pubkey"}
+define_tiny_edwards_type! {KeyImage, "ReRingCT key image"}
+define_tiny_edwards_type! {OnetimeExtension, "Difference between one-time address and address spend pubkey"}
 
-/// X25519 ECDH point secret
-define_tiny_montgomery_type! {MontgomeryECDH, ZeroizeOnDrop}
-define_tiny_montgomery_type! {EnoteEphemeralPubkey,}
+define_tiny_montgomery_type! {MontgomeryECDH, "External sender-receiver uncontextualized ECDH exchange", ZeroizeOnDrop}
+define_tiny_montgomery_type! {EnoteEphemeralPubkey, "Enote ephemeral pubkey",}
 
-define_tiny_scalar_type! {AmountBlindingKey}
-define_tiny_scalar_type! {EnoteEphemeralKey}
-define_tiny_scalar_type! {OnetimeExtensionG}
-define_tiny_scalar_type! {OnetimeExtensionT}
+define_tiny_scalar_type! {AmountBlindingKey, "Blinding factor for an amount commitment"}
+define_tiny_scalar_type! {EnoteEphemeralKey, "Private key for an enote ephemeral pubkey"}
+define_tiny_scalar_type! {OnetimeExtensionG, "Opening for a one-time extension against the G generator"}
+define_tiny_scalar_type! {OnetimeExtensionT, "Opening for a one-time extension against the T generator"}
 
-define_tiny_byte_type! {SenderReceiverSecret, 32, ZeroizeOnDrop}
+define_tiny_byte_type! {SenderReceiverSecret, "Contextualized sender-receiver uniform byte secret", 32, ZeroizeOnDrop}
 
-/// either encodes randomness the private key of, or an HMAC of, the ephemeral pubkey
-define_tiny_byte_type! {JanusAnchor, JANUS_ANCHOR_BYTES}
-/// carrot janus anchor XORd with a user-defined secret
-define_tiny_byte_type! {EncryptedJanusAnchor, JANUS_ANCHOR_BYTES}
+define_tiny_byte_type! {JanusAnchor,
+    "Janus anchor holds normal enote ephemeral private key randomness or special HMAC of enote ephemeral pubkey",
+    JANUS_ANCHOR_BYTES}
+define_tiny_byte_type! {EncryptedJanusAnchor,
+    "Enote janus anchor, encrypted", JANUS_ANCHOR_BYTES}
 
-/// carrot amount
+/// ReRingCT amount, 64-bit
 pub type Amount = u64;
-/// carrot encrypted amount
-define_tiny_byte_type! {EncryptedAmount, ENCRYPTED_AMOUNT_BYTES}
+define_tiny_byte_type! {EncryptedAmount, "Encrypted amount", ENCRYPTED_AMOUNT_BYTES}
 
-/// legacy encrypted payment ID
-define_tiny_byte_type! {EncryptedPaymentId, PAYMENT_ID_BYTES}
+define_tiny_byte_type! {EncryptedPaymentId, "Encrypted payment ID", PAYMENT_ID_BYTES}
 
-/// carrot view tags
-define_tiny_byte_type! {ViewTag, VIEW_TAG_BYTES}
+define_tiny_byte_type! {ViewTag, "Carrot view tag", VIEW_TAG_BYTES}
 
-/// carrot input context
-define_tiny_byte_type! {InputContext, INPUT_CONTEXT_BYTES}
+define_tiny_byte_type! {InputContext, "Carrot input context", INPUT_CONTEXT_BYTES}
 
-/// block index
+/// Block index for coinbase enote input contexts
 pub type BlockIndex = u64;
 
 /// carrot enote types

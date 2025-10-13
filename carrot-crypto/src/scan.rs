@@ -1,4 +1,3 @@
-use crate::as_crypto::AsMontgomeryPoint;
 use crate::destination::CarrotDestinationV1;
 use crate::device::ViewIncomingKeyDevice;
 use crate::device::{self, ViewBalanceSecretDevice};

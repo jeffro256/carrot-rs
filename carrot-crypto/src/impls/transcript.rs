@@ -3,7 +3,6 @@ use curve25519_dalek::{MontgomeryPoint, Scalar, edwards::CompressedEdwardsY};
 use generic_array::{ArrayLength, GenericArray};
 use typenum::{Const, ToUInt, U32};
 
-use crate::as_crypto::{AsEdwardsPoint, AsMontgomeryPoint, AsScalar};
 use crate::transcript::*;
 
 macro_rules! impl_transcript_uint {

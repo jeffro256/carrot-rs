@@ -6,18 +6,18 @@ use crate::math_utils::*;
 use crate::transcript::*;
 use crate::type_macros::*;
 
-define_tiny_byte_type! {MasterSecret, 32, ZeroizeOnDrop}
-define_tiny_byte_type! {ViewBalanceSecret, 32, ZeroizeOnDrop}
-define_tiny_byte_type! {GenerateAddressSecret, 32, ZeroizeOnDrop}
-define_tiny_byte_type! {AddressIndexGeneratorSecret, 32, ZeroizeOnDrop}
+define_tiny_byte_type! {MasterSecret, "Master secret for a Carrot-derived account", 32, ZeroizeOnDrop}
+define_tiny_byte_type! {ViewBalanceSecret, "View-balance secret for a Carrot-derived account", 32, ZeroizeOnDrop}
+define_tiny_byte_type! {GenerateAddressSecret, "Generate-address secret for a Carrot-derived account", 32, ZeroizeOnDrop}
+define_tiny_byte_type! {AddressIndexGeneratorSecret, "Address index generator secret for a Carrot-derived address", 32, ZeroizeOnDrop}
 
-define_tiny_scalar_type! {ProveSpendKey}
-define_tiny_scalar_type! {GenerateImageKey}
-define_tiny_scalar_type! {ViewIncomingKey}
-define_tiny_scalar_type! {SubaddressScalarSecret}
+define_tiny_scalar_type! {ProveSpendKey, "Prove-spend key for a Carrot-derived account"}
+define_tiny_scalar_type! {GenerateImageKey, "Generate-image key for a Carrot-derived account"}
+define_tiny_scalar_type! {ViewIncomingKey, "View-incoming key for a Carrot-derived account"}
+define_tiny_scalar_type! {SubaddressScalarSecret, "Subaddress scalar key for a Carrot-derived address"}
 
-define_tiny_edwards_type! {AddressSpendPubkey}
-define_tiny_edwards_type! {AddressViewPubkey}
+define_tiny_edwards_type! {AddressSpendPubkey, "Spend pubkey in an address or account, Carrot-derived or otherwise"}
+define_tiny_edwards_type! {AddressViewPubkey, "View pubkey in an address or account, Carrot-derived or otherwise"}
 
 impl ProveSpendKey {
     pub fn derive(s_master: &MasterSecret) -> Self {

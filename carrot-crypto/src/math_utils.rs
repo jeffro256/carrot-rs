@@ -1,7 +1,7 @@
-use curve25519_dalek::{EdwardsPoint, MontgomeryPoint, Scalar, edwards::CompressedEdwardsY};
+use curve25519_dalek::{EdwardsPoint, MontgomeryPoint, edwards::CompressedEdwardsY};
 use group::GroupEncoding;
 
-use crate::as_crypto::{AsEdwardsPoint, AsMontgomeryPoint, AsScalar};
+use crate::as_crypto::{AsEdwardsPoint, AsScalar};
 
 pub fn scalar_mul_gt<S1, S2>(x: &S1, y: &S2) -> CompressedEdwardsY
 where

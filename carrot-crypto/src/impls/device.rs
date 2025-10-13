@@ -1,4 +1,4 @@
-use crate::as_crypto::{AsMontgomeryPoint, AsScalar};
+use crate::as_crypto::AsScalar;
 use crate::device::*;
 use crate::*;
 
