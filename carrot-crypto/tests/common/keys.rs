@@ -1,7 +1,5 @@
-use carrot_crypto::*;
-use curve25519_dalek::{EdwardsPoint, Scalar};
-use group::GroupEncoding;
-use sha3::{Digest, Keccak256};
+use carrot_crypto::{*, opening::{OpenedPoint, OpeningScalarSecret}};
+use sha3::{digest::Output, Digest, Keccak256};
 use std::collections::HashMap;
 
 use crate::common::math::scalar_mul_gt;
@@ -30,11 +28,11 @@ pub struct SubaddressIndexExtended {
 
 pub struct MockKeys {
     // legacy privkeys and pubkeys
-    pub legacy_k_spend: ScalarSecret,
+    pub legacy_k_spend: ProveSpendKey,
     pub legacy_account_spend_pubkey: AddressSpendPubkey,
 
     // carrot secret keys (minus k_v, which is shared with legacy k_v)
-    pub s_master: Uniform32Secret,
+    pub s_master: MasterSecret,
     pub k_prove_spend: ProveSpendKey,
     pub s_view_balance: ViewBalanceSecret,
     pub k_generate_image: GenerateImageKey,
@@ -114,7 +112,7 @@ impl MockKeys {
     pub fn opening_for_subaddress(
         &self,
         subaddr_index: &SubaddressIndexExtended,
-    ) -> (Scalar, Scalar, AddressSpendPubkey) {
+    ) -> (OpeningScalarSecret, OpeningScalarSecret, AddressSpendPubkey) {
         let is_subaddress = subaddr_index.index.is_subaddress();
         let major_index = subaddr_index.index.major;
         let minor_index = subaddr_index.index.minor;
@@ -123,7 +121,7 @@ impl MockKeys {
             match self.resolve_derive_type(subaddr_index.derive_type) {
                 AddressDeriveType::Carrot => {
                     // s^j_gen = H_32[s_ga](j_major, j_minor)
-                    let address_index_generator = account::make_carrot_index_extension_generator(
+                    let address_index_generator = AddressIndexGeneratorSecret::derive(
                         &self.s_generate_address,
                         major_index,
                         minor_index,
@@ -131,7 +129,7 @@ impl MockKeys {
 
                     let subaddress_scalar = if is_subaddress {
                         // k^j_subscal = H_n(K_s, j_major, j_minor, s^j_gen)
-                        account::make_carrot_subaddress_scalar(
+                        SubaddressScalarSecret::derive(
                             &self.carrot_account_spend_pubkey,
                             &address_index_generator,
                             major_index,
@@ -139,50 +137,51 @@ impl MockKeys {
                         )
                     } else {
                         // k^j_subscal = 1
-                        SubaddressScalarSecret(ScalarSecret(Scalar::from(1u8)))
+                        SubaddressScalarSecret::from(1u64)
                     };
 
                     // k^g_a = k_gi * k^j_subscal
-                    let address_privkey_g = self.k_generate_image.0.0 * subaddress_scalar.0.0;
+                    let address_privkey_g = &self.k_generate_image * &subaddress_scalar;
 
                     // k^t_a = k_ps * k^j_subscal
-                    let address_privkey_t = self.k_prove_spend.0.0 * subaddress_scalar.0.0;
+                    let address_privkey_t = &self.k_prove_spend * &subaddress_scalar;
 
                     (address_privkey_g, address_privkey_t)
                 }
                 AddressDeriveType::Legacy => {
                     // m = Hn(k_v || j_major || j_minor) if subaddress else 0
                     let subaddress_extension = Self::make_legacy_subaddress_extension(
-                        &self.k_view_incoming.0,
+                        &self.k_view_incoming,
                         major_index,
                         minor_index,
                     );
 
                     // k^g_a = k_s + m
-                    let address_privkey_g = &self.legacy_k_spend.0 + &subaddress_extension.0;
+                    let address_privkey_g = &self.legacy_k_spend + &subaddress_extension;
 
                     // k^t_a = 0
-                    (address_privkey_g, Scalar::from(0u8))
+                    (address_privkey_g, OpeningScalarSecret::default())
                 }
             };
 
         // perform sanity check
         let addr = self.subaddress(subaddr_index);
-        let recomputed_address_spend_pubkey = scalar_mul_gt(&address_privkey_g, &address_privkey_t);
+        let recomputed_address_spend_pubkey = AddressSpendPubkey::from(OpenedPoint::scalar_mul_gt(
+            &address_privkey_g, &address_privkey_t));
 
-        assert_eq!(recomputed_address_spend_pubkey, addr.address_spend_pubkey.0);
+        assert_eq!(recomputed_address_spend_pubkey, addr.address_spend_pubkey);
 
         (
             address_privkey_g,
             address_privkey_t,
-            AddressSpendPubkey(recomputed_address_spend_pubkey),
+            recomputed_address_spend_pubkey,
         )
     }
 
     pub fn try_searching_for_opening_for_subaddress(
         &self,
         address_spend_pubkey: &AddressSpendPubkey,
-    ) -> Option<(Scalar, Scalar)> {
+    ) -> Option<(OpeningScalarSecret, OpeningScalarSecret)> {
         let subaddr_index = self.subaddress_map.get(address_spend_pubkey)?;
 
         let (address_privkey_g, address_privkey_t, recomputed_address_spend_pubkey) =
@@ -198,16 +197,16 @@ impl MockKeys {
         address_spend_pubkey: &AddressSpendPubkey,
         sender_extension_g: &OnetimeExtensionG,
         sender_extension_t: &OnetimeExtensionT,
-    ) -> Option<(Scalar, Scalar)> {
+    ) -> Option<(OpeningScalarSecret, OpeningScalarSecret)> {
         // k^{j,g}_addr, k^{j,t}_addr
         let (address_privkey_g, address_privkey_t) =
             self.try_searching_for_opening_for_subaddress(address_spend_pubkey)?;
 
         // x = k^{j,g}_addr + k^g_o
-        let x = address_privkey_g + sender_extension_g.0.0;
+        let x = &address_privkey_g + sender_extension_g;
 
         // y = k^{j,t}_addr + k^t_o
-        let y = address_privkey_t + sender_extension_t.0.0;
+        let y = &address_privkey_t + sender_extension_t;
 
         Some((x, y))
     }
@@ -221,12 +220,12 @@ impl MockKeys {
     ) -> bool {
         // first test that K^j_s + k^g_o G + k^t_o T ?= K_o
         // otherwise, there's a problem with the scan funcs
-        let onetime_extension = scalar_mul_gt(&sender_extension_g.0.0, &sender_extension_t.0.0);
-        let recomputed_onetime_address = (EdwardsPoint::from_bytes(&address_spend_pubkey.0.0)
-            .unwrap()
-            + EdwardsPoint::from_bytes(&onetime_extension.0).unwrap())
-        .compress();
-        assert_eq!(recomputed_onetime_address, onetime_address.0);
+        let sender_extension_pubkey = OnetimeExtension::derive_from_extension_scalars(
+            sender_extension_g,
+            sender_extension_t);
+        let recomputed_onetime_address = OutputPubkey::derive_from_extension(address_spend_pubkey,
+            sender_extension_pubkey).expect("OutputPubkey::derive_from_extension");
+        assert_eq!(&recomputed_onetime_address, onetime_address);
 
         let Some((x, y)) = self.try_searching_for_opening_for_onetime_address(
             address_spend_pubkey,
@@ -237,10 +236,10 @@ impl MockKeys {
         };
 
         // O' = x G + y T
-        let recomputed_onetime_address = scalar_mul_gt(&x, &y);
+        let recomputed_onetime_address = OutputPubkey::from(OpenedPoint::scalar_mul_gt(&x, &y));
 
         // O' ?= O
-        &recomputed_onetime_address == &onetime_address.0
+        &recomputed_onetime_address == onetime_address
     }
 
     fn resolve_derive_type(&self, derive_type: Option<AddressDeriveType>) -> AddressDeriveType {
@@ -248,12 +247,12 @@ impl MockKeys {
     }
 
     fn make_legacy_subaddress_extension(
-        k_view: &ScalarSecret,
+        k_view: &ViewIncomingKey,
         major_index: u32,
         minor_index: u32,
-    ) -> ScalarSecret {
+    ) -> OpeningScalarSecret {
         if major_index == 0 && minor_index == 0 {
-            return ScalarSecret::default();
+            return OpeningScalarSecret::default();
         }
 
         let mut data = [0u8; (8 + 32 + 4 + 4)];
@@ -261,7 +260,7 @@ impl MockKeys {
         data[0..7].copy_from_slice("SubAddr".as_bytes());
         data[8] = 0;
         // ... || k_v
-        data[8..40].copy_from_slice(k_view.0.as_bytes());
+        data[8..40].copy_from_slice(k_view.as_bytes());
         // ... || IntToBytes32(j_major)
         data[40..44].copy_from_slice(&major_index.to_be_bytes());
         // ... || IntToBytes32(j_minor)
@@ -271,14 +270,14 @@ impl MockKeys {
         let mut hasher = Keccak256::default();
         hasher.update(&data);
         let hash = hasher.finalize();
-        ScalarSecret(Scalar::from_bytes_mod_order(hash.into()))
+        OpeningScalarSecret::from_bytes_mod_order(hash.into())
     }
 
-    fn make_legacy_view_key(legacy_k_spend: &ScalarSecret) -> ViewIncomingKey {
+    fn make_legacy_view_key(legacy_k_spend: &ProveSpendKey) -> ViewIncomingKey {
         let mut hasher = Keccak256::default();
-        hasher.update(&legacy_k_spend.0.as_bytes());
+        hasher.update(legacy_k_spend.as_bytes());
         let hash = hasher.finalize();
-        ViewIncomingKey(ScalarSecret(Scalar::from_bytes_mod_order(hash.into())))
+        ViewIncomingKey::from_bytes_mod_order(hash.into())
     }
 
     fn make_legacy_subaddress(
@@ -288,54 +287,54 @@ impl MockKeys {
         minor_index: u32,
     ) -> CarrotDestinationV1 {
         let subaddress_extension_scalar =
-            Self::make_legacy_subaddress_extension(&k_view.0, major_index, minor_index);
-        let subaddress_extension = EdwardsPoint::mul_base(&subaddress_extension_scalar.0);
-        let address_spend_pubkey =
-            EdwardsPoint::from_bytes(account_spend_pubkey.0.as_bytes().into())
-                .expect("EdwardsPoint::from_bytes")
-                + subaddress_extension;
-        let address_view_pubkey = &k_view.0.0 * &address_spend_pubkey;
+            Self::make_legacy_subaddress_extension(&k_view, major_index, minor_index);
+        let subaddress_extension = OpenedPoint::scalar_mul_gt(&subaddress_extension_scalar, 
+            &OpeningScalarSecret::default());
+        let address_spend_pubkey = AddressSpendPubkey::from(account_spend_pubkey +
+            &subaddress_extension);
+        let address_view_pubkey = AddressViewPubkey::derive_carrot_account_view_pubkey(k_view,
+            &address_spend_pubkey).expect("derive_carrot_account_view_pubkey (legacy)");
         let is_subaddress = major_index != 0 || minor_index != 0;
         CarrotDestinationV1 {
-            address_spend_pubkey: AddressSpendPubkey(address_spend_pubkey.compress()),
-            address_view_pubkey: AddressViewPubkey(address_view_pubkey.compress()),
+            address_spend_pubkey: address_spend_pubkey,
+            address_view_pubkey: address_view_pubkey,
             is_subaddress: is_subaddress,
-            payment_id: NULL_PAYMENT_ID,
+            payment_id: PaymentId::default(),
         }
     }
 
     fn from_master_keys(
-        s_master: Uniform32Secret,
-        legacy_k_spend: ScalarSecret,
+        s_master: MasterSecret,
+        legacy_k_spend: ProveSpendKey,
         default_derive_type: AddressDeriveType,
     ) -> Self {
         // derive legacy pubkeys
-        let legacy_account_spend_pubkey = account::make_carrot_spend_pubkey(
-            &GenerateImageKey(legacy_k_spend.clone()),
+        let legacy_account_spend_pubkey = AddressSpendPubkey::derive_carrot_account_spend_pubkey(
+            &GenerateImageKey::from_bytes_mod_order(legacy_k_spend.as_bytes().clone()),
             &ProveSpendKey::default(),
         );
 
         // derive carrot privkeys
-        let k_prove_spend = account::make_carrot_provespend_key(&s_master);
-        let s_view_balance = account::make_carrot_viewbalance_secret(&s_master);
-        let k_generate_image = account::make_carrot_generateimage_key(&s_view_balance);
-        let s_generate_address = account::make_carrot_generateaddress_secret(&s_view_balance);
+        let k_prove_spend = ProveSpendKey::derive(&s_master);
+        let s_view_balance = ViewBalanceSecret::derive(&s_master);
+        let k_generate_image = GenerateImageKey::derive(&s_view_balance);
+        let s_generate_address = GenerateAddressSecret::derive(&s_view_balance);
 
         // derive view-incoming {pub/priv}key, dependent on address derive type
         let k_view_incoming = match default_derive_type {
-            AddressDeriveType::Carrot => account::make_carrot_viewincoming_key(&s_view_balance),
+            AddressDeriveType::Carrot => ViewIncomingKey::derive(&s_view_balance),
             AddressDeriveType::Legacy => Self::make_legacy_view_key(&legacy_k_spend),
         };
         let primary_address_view_pubkey =
-            account::make_carrot_primary_address_view_pubkey(&k_view_incoming);
+            AddressViewPubkey::derive_primary_address_view_pubkey(&k_view_incoming);
 
         // derive carrot account pubkeys
         let carrot_account_spend_pubkey =
-            account::make_carrot_spend_pubkey(&k_generate_image, &k_prove_spend);
-        let carrot_account_view_pubkey = account::make_carrot_account_view_pubkey(
+            AddressSpendPubkey::derive_carrot_account_spend_pubkey(&k_generate_image, &k_prove_spend);
+        let carrot_account_view_pubkey = AddressViewPubkey::derive_carrot_account_view_pubkey(
             &k_view_incoming,
             &carrot_account_spend_pubkey,
-        );
+        ).unwrap();
 
         // derive subaddress map, Carrot and Legacy
         let mut subaddress_map = HashMap::new();
@@ -408,8 +407,8 @@ impl random::Random for MockKeys {
         p: Self::Params,
     ) -> Self {
         Self::from_master_keys(
-            Uniform32Secret::new_random_with_params(rng, ()),
-            ScalarSecret::new_random_with_params(rng, ()),
+            MasterSecret::new_random_with_params(rng, ()),
+            ProveSpendKey::new_random_with_params(rng, ()),
             p,
         )
     }

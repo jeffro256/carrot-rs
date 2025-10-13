@@ -1,8 +1,11 @@
-use crate::account::make_carrot_subaddress_scalar;
-use crate::core_types::*;
+use crate::*;
+use crate::consts::*;
 use crate::device::*;
-use crate::math_utils::scalar_mul_key_vartime;
 use crate::random::Random;
+use crate::type_macros::*;
+
+/// legacy payment ID
+define_tiny_byte_type! {PaymentId, PAYMENT_ID_BYTES}
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CarrotDestinationV1 {
@@ -21,7 +24,7 @@ impl CarrotDestinationV1 {
             address_spend_pubkey: account_spend_pubkey,
             address_view_pubkey: primary_address_view_pubkey,
             is_subaddress: false,
-            payment_id: NULL_PAYMENT_ID,
+            payment_id: Default::default(),
         }
     }
 
@@ -42,32 +45,30 @@ impl CarrotDestinationV1 {
             .ok()?;
 
         // k^j_subscal = H_n(K_s, j_major, j_minor, s^j_gen)
-        let subaddress_scalar = &make_carrot_subaddress_scalar(
+        let subaddress_scalar = SubaddressScalarSecret::derive(
             &account_spend_pubkey,
             &address_index_generator,
             major_index,
             minor_index,
-        )
-        .0
-        .0;
+        );
 
         // K^j_s = k^j_subscal * K_s
-        let address_spend_pubkey = AddressSpendPubkey(scalar_mul_key_vartime(
-            subaddress_scalar,
-            &account_spend_pubkey.0,
-        )?);
+        let address_spend_pubkey = AddressSpendPubkey::derive_subaddress_spend_pubkey(
+            &subaddress_scalar,
+            account_spend_pubkey,
+        )?;
 
         // K^j_v = k^j_subscal * K_v
-        let address_view_pubkey = AddressViewPubkey(scalar_mul_key_vartime(
-            subaddress_scalar,
-            &account_view_pubkey.0,
-        )?);
+        let address_view_pubkey = AddressViewPubkey::derive_subaddress_view_pubkey(
+            &subaddress_scalar,
+            account_view_pubkey,
+        )?;
 
         Some(Self {
             address_spend_pubkey: address_spend_pubkey,
             address_view_pubkey: address_view_pubkey,
             is_subaddress: true,
-            payment_id: NULL_PAYMENT_ID,
+            payment_id: Default::default(),
         })
     }
 
@@ -85,7 +86,7 @@ impl CarrotDestinationV1 {
     }
 
     pub fn is_integrated(&self) -> bool {
-        return self.payment_id != NULL_PAYMENT_ID;
+        return self.payment_id != Default::default();
     }
 }
 
@@ -103,7 +104,7 @@ impl Random for CarrotDestinationV1 {
             payment_id: if is_integrated_address {
                 PaymentId::new_random_with_params(rng, ())
             } else {
-                NULL_PAYMENT_ID
+                Default::default()
             },
         }
     }
@@ -123,12 +124,12 @@ mod test {
 
         let subaddress = CarrotDestinationV1::make_subaddress(
             &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f"),
-            &make_carrot_account_view_pubkey(
+            &AddressViewPubkey::derive_carrot_account_view_pubkey(
                 &hex_into!("60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200"),
-                &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f")),
+                &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f")).unwrap(),
             &s_generate_address,
             5,
-            16).expect("make_subaddress");
+            16).unwrap();
         assert_eq_hex!(
             "1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0",
             subaddress.address_spend_pubkey);

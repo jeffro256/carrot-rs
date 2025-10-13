@@ -1,17 +1,17 @@
 #![no_std]
 
+mod as_crypto;
 pub mod account;
 mod consts;
-mod core_types;
 mod destination;
 pub mod device;
 mod domain_separators;
 mod enote;
-pub mod enote_utils;
+mod enote_components;
 mod hash_functions;
 mod impls;
-mod lazy_amount_commitment;
 mod math_utils;
+pub mod opening;
 mod output_set_finalization;
 pub mod payments;
 mod permutate;
@@ -19,8 +19,10 @@ pub mod random;
 pub mod scan;
 mod scan_unsafe;
 mod transcript;
+mod type_macros;
 #[cfg(test)]
 mod unit_testing;
 
-pub use core_types::*;
+pub use account::*;
 pub use destination::*;
+pub use enote_components::*;

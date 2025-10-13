@@ -28,7 +28,7 @@ fn main_address_normal_scan_completeness() {
         .expect("get_normal_output_proposal");
 
     assert_eq!(proposal.amount, enote_proposal.amount);
-    let recomputed_amount_commitment = enote_utils::make_carrot_amount_commitment(
+    let recomputed_amount_commitment = AmountCommitment::commit(
         enote_proposal.amount,
         &enote_proposal.amount_blinding_factor,
     );
@@ -37,11 +37,10 @@ fn main_address_normal_scan_completeness() {
         recomputed_amount_commitment
     );
 
-    let s_sender_receiver_unctx = scan::make_carrot_uncontextualized_shared_key_receiver(
+    let s_sender_receiver_unctx = MontgomeryECDH::derive_as_receiver(
         &keys.k_view_incoming,
         &enote_proposal.enote.enote_ephemeral_pubkey,
-    )
-    .expect("make_carrot_uncontextualized_shared_key_receiver");
+    );
 
     let (
         recovered_sender_extension_g,
@@ -70,7 +69,7 @@ fn main_address_normal_scan_completeness() {
         enote_proposal.amount_blinding_factor,
         recovered_amount_blinding_factor
     );
-    assert_eq!(NULL_PAYMENT_ID, recovered_payment_id);
+    assert_eq!(PaymentId::default(), recovered_payment_id);
     assert_eq!(CarrotEnoteType::Payment, recovered_enote_type);
 
     // check spendability
@@ -103,7 +102,7 @@ fn subaddress_normal_scan_completeness() {
         .expect("get_output_proposal_normal_v1");
 
     assert_eq!(proposal.amount, enote_proposal.amount);
-    let recomputed_amount_commitment = enote_utils::make_carrot_amount_commitment(
+    let recomputed_amount_commitment = AmountCommitment::commit(
         enote_proposal.amount,
         &enote_proposal.amount_blinding_factor,
     );
@@ -145,7 +144,7 @@ fn subaddress_normal_scan_completeness() {
         enote_proposal.amount_blinding_factor,
         recovered_amount_blinding_factor
     );
-    assert_eq!(NULL_PAYMENT_ID, recovered_payment_id);
+    assert_eq!(PaymentId::default(), recovered_payment_id);
     assert_eq!(CarrotEnoteType::Payment, recovered_enote_type);
 
     // check spendability
@@ -162,7 +161,7 @@ fn integrated_address_normal_scan_completeness() {
     let keys = &*BOB_CARROT_KEYS;
 
     let integrated_address = keys.integrated_address(gen_non_null_payment_id(), None);
-    assert_ne!(NULL_PAYMENT_ID, integrated_address.payment_id);
+    assert_ne!(PaymentId::default(), integrated_address.payment_id);
 
     let proposal = payments::CarrotPaymentProposalV1 {
         destination: integrated_address.clone(),
@@ -177,7 +176,7 @@ fn integrated_address_normal_scan_completeness() {
         .expect("get_normal_output_proposal");
 
     assert_eq!(proposal.amount, enote_proposal.amount);
-    let recomputed_amount_commitment = enote_utils::make_carrot_amount_commitment(
+    let recomputed_amount_commitment = AmountCommitment::commit(
         enote_proposal.amount,
         &enote_proposal.amount_blinding_factor,
     );
@@ -252,7 +251,7 @@ fn main_address_special_scan_completeness() {
             .expect("get_special_output_proposal");
 
         assert_eq!(proposal.amount, enote_proposal.amount);
-        let recomputed_amount_commitment = enote_utils::make_carrot_amount_commitment(
+        let recomputed_amount_commitment = AmountCommitment::commit(
             enote_proposal.amount,
             &enote_proposal.amount_blinding_factor,
         );
@@ -294,7 +293,7 @@ fn main_address_special_scan_completeness() {
             enote_proposal.amount_blinding_factor,
             recovered_amount_blinding_factor
         );
-        assert_eq!(NULL_PAYMENT_ID, recovered_payment_id);
+        assert_eq!(PaymentId::default(), recovered_payment_id);
         assert_eq!(enote_type, recovered_enote_type);
 
         // check spendability
@@ -332,7 +331,7 @@ fn subaddress_special_scan_completeness() {
             .expect("get_special_output_proposal");
 
         assert_eq!(proposal.amount, enote_proposal.amount);
-        let recomputed_amount_commitment = enote_utils::make_carrot_amount_commitment(
+        let recomputed_amount_commitment = AmountCommitment::commit(
             enote_proposal.amount,
             &enote_proposal.amount_blinding_factor,
         );
@@ -374,7 +373,7 @@ fn subaddress_special_scan_completeness() {
             enote_proposal.amount_blinding_factor,
             recovered_amount_blinding_factor
         );
-        assert_eq!(NULL_PAYMENT_ID, recovered_payment_id);
+        assert_eq!(PaymentId::default(), recovered_payment_id);
         assert_eq!(enote_type, recovered_enote_type);
 
         // check spendability
@@ -410,7 +409,7 @@ fn main_address_internal_scan_completeness() {
             .expect("get_internal_output_proposal");
 
         assert_eq!(proposal.amount, enote_proposal.amount);
-        let recomputed_amount_commitment = enote_utils::make_carrot_amount_commitment(
+        let recomputed_amount_commitment = AmountCommitment::commit(
             enote_proposal.amount,
             &enote_proposal.amount_blinding_factor,
         );
@@ -481,7 +480,7 @@ fn subaddress_internal_scan_completeness() {
             .expect("get_internal_output_proposal");
 
         assert_eq!(proposal.amount, enote_proposal.amount);
-        let recomputed_amount_commitment = enote_utils::make_carrot_amount_commitment(
+        let recomputed_amount_commitment = AmountCommitment::commit(
             enote_proposal.amount,
             &enote_proposal.amount_blinding_factor,
         );

@@ -1,8 +1,7 @@
 use core::fmt::{Debug, Display};
+use curve25519_dalek::{EdwardsPoint};
 
-use curve25519_dalek::{EdwardsPoint, MontgomeryPoint};
-
-use crate::core_types::*;
+use crate::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
@@ -39,7 +38,7 @@ pub trait ViewIncomingKeyDevice {
      * return: true on success, false on failure (e.g. unable to decompress point)
      */
     #[allow(non_snake_case)]
-    fn view_key_scalar_mult_x25519(&self, D: &MontgomeryPoint) -> Result<MontgomeryECDH>;
+    fn view_key_scalar_mult_x25519(&self, D: &EnoteEphemeralPubkey) -> Result<MontgomeryECDH>;
 
     /**
      * brief: make a janus anchor for "special" enotes

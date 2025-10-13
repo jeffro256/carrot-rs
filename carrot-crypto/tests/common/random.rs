@@ -39,7 +39,7 @@ pub fn gen_subaddress_index() -> SubaddressIndexExtended {
 pub fn gen_non_null_payment_id() -> PaymentId {
     loop {
         let res = gen_random();
-        if res != NULL_PAYMENT_ID {
+        if res != PaymentId::default() {
             return res;
         }
     }

@@ -1,8 +1,21 @@
-use crate::core_types::*;
+use crate::*;
+use crate::as_crypto::AsMontgomeryPoint;
 use crate::device::ViewIncomingKeyDevice;
 use crate::enote::{CarrotCoinbaseEnoteV1, CarrotEnoteV1};
-use crate::enote_utils::*;
-use crate::lazy_amount_commitment::LazyAmountCommitment;
+
+pub enum LazyAmountCommitment {
+    Closed(AmountCommitment),
+    CleartextOpen(Amount),
+}
+
+impl LazyAmountCommitment {
+    pub fn calculate(&self) -> AmountCommitment {
+        match self {
+            Self::Closed(x) => x.clone(),
+            Self::CleartextOpen(a) => AmountCommitment::clear_commit(*a),
+        }
+    }
+}
 
 unsafe fn scan_carrot_dest_info(
     onetime_address: &OutputPubkey,
@@ -19,27 +32,27 @@ unsafe fn scan_carrot_dest_info(
 )> {
     // k^o_g = H_n("..g..", s^ctx_sr, C_a)
     let sender_extension_g =
-        make_carrot_onetime_address_extension_g(s_sender_receiver, amount_commitment);
+        OnetimeExtensionG::derive(s_sender_receiver, amount_commitment);
 
     // k^o_t = H_n("..t..", s^ctx_sr, C_a)
     let sender_extension_t =
-        make_carrot_onetime_address_extension_t(s_sender_receiver, amount_commitment);
+        OnetimeExtensionT::derive(s_sender_receiver, amount_commitment);
 
     // K^j_s = Ko - K^o_ext = Ko - (k^o_g G + k^o_t T)
-    let address_spend_pubkey =
-        recover_address_spend_pubkey(onetime_address, s_sender_receiver, amount_commitment)?;
+    let address_spend_pubkey = AddressSpendPubkey::recover_from_onetime_address(
+        onetime_address, s_sender_receiver, amount_commitment)?;
 
     // pid = pid_enc XOR m_pid, if applicable
     let nominal_payment_id = match encrypted_payment_id {
         Some(encrypted_payment_id) => {
-            decrypt_legacy_payment_id(encrypted_payment_id, &s_sender_receiver, &onetime_address)
+            encrypted_payment_id.decrypt(&s_sender_receiver, &onetime_address)
         }
-        None => NULL_PAYMENT_ID,
+        None => Default::default(),
     };
 
     // anchor = anchor_enc XOR m_anchor
     let janus_anchor =
-        decrypt_carrot_anchor(encrypted_janus_anchor, &s_sender_receiver, &onetime_address);
+        encrypted_janus_anchor.decrypt(&s_sender_receiver, &onetime_address);
 
     Some((
         sender_extension_g,
@@ -68,18 +81,17 @@ unsafe fn try_scan_carrot_external_noamount(
     JanusAnchor,
 )> {
     // if vt' != vt, then FAIL
-    if !test_carrot_view_tag(
-        &s_sender_receiver_unctx.0.0,
+    if !view_tag.derive_and_test(
+        &s_sender_receiver_unctx.as_montgomery_ref().0,
         input_context,
-        onetime_address,
-        view_tag,
+        onetime_address
     ) {
         return None;
     }
 
     // s^ctx_sr = H_32(s_sr, D_e, input_context)
-    let s_sender_receiver = make_carrot_sender_receiver_secret(
-        &s_sender_receiver_unctx.0.0,
+    let s_sender_receiver = SenderReceiverSecret::derive(
+        &s_sender_receiver_unctx.as_montgomery_ref().0,
         enote_ephemeral_pubkey,
         input_context,
     );
@@ -124,7 +136,7 @@ pub unsafe fn try_scan_carrot_coinbase_enote_no_janus(
     JanusAnchor,
 )> {
     // input_context
-    let input_context = make_carrot_input_context_coinbase(enote.block_index);
+    let input_context = InputContext::new_coinbase(enote.block_index);
 
     // s^ctx_sr, k^g_o, k^g_t, K^j_s, pid, anchor
     let (_, sender_extension_g, sender_extension_t, address_spend_pubkey, _, janus_anchor) = unsafe {
@@ -163,7 +175,7 @@ pub unsafe fn try_scan_carrot_enote_external_no_janus(
     JanusAnchor,
 )> {
     // input_context
-    let input_context = make_carrot_input_context(&enote.tx_first_key_image);
+    let input_context = InputContext::new_ringct(&enote.tx_first_key_image);
 
     // s^ctx_sr, k^g_o, k^g_t, K^j_s, pid, and Janus verification
     let (
@@ -271,7 +283,7 @@ pub unsafe fn verify_carrot_normal_janus_protection_and_confirm_pid(
     }
 
     // if can recompute D_e with null pid, then PASS
-    *nominal_payment_id_inout = NULL_PAYMENT_ID;
+    *nominal_payment_id_inout = Default::default();
     verify_carrot_normal_janus_protection(
         nominal_janus_anchor,
         input_context,
@@ -293,7 +305,7 @@ where
     VI: ViewIncomingKeyDevice,
 {
     // input_context = "R" || KI_1
-    let input_context = make_carrot_input_context(tx_first_key_image);
+    let input_context = InputContext::new_ringct(tx_first_key_image);
 
     // anchor_sp = H_16(D_e, input_context, Ko, k_v)
     let Ok(expected_special_anchor) = k_view_dev.make_janus_anchor_special(

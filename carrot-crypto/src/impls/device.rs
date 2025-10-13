@@ -1,7 +1,6 @@
-use crate::account::make_carrot_index_extension_generator;
-use crate::core_types::*;
+use crate::*;
+use crate::as_crypto::{AsMontgomeryPoint, AsScalar};
 use crate::device::*;
-use crate::enote_utils::*;
 
 impl ViewIncomingKeyDevice for ViewIncomingKey {
     #[allow(non_snake_case)]
@@ -9,15 +8,15 @@ impl ViewIncomingKeyDevice for ViewIncomingKey {
         &self,
         P: &curve25519_dalek::EdwardsPoint,
     ) -> Result<curve25519_dalek::EdwardsPoint> {
-        Ok(self.0.0 * P)
+        Ok(self.as_scalar_ref() * P)
     }
 
     #[allow(non_snake_case)]
     fn view_key_scalar_mult_x25519(
         &self,
-        D: &curve25519_dalek::MontgomeryPoint,
+        D: &EnoteEphemeralPubkey,
     ) -> Result<MontgomeryECDH> {
-        Ok(MontgomeryECDH(self.0.0 * D))
+        Ok(MontgomeryECDH::derive_as_receiver(self, D))
     }
 
     fn make_janus_anchor_special(
@@ -26,7 +25,7 @@ impl ViewIncomingKeyDevice for ViewIncomingKey {
         input_context: &InputContext,
         onetime_address: &OutputPubkey,
     ) -> Result<JanusAnchor> {
-        Ok(make_carrot_janus_anchor_special(
+        Ok(JanusAnchor::derive_special(
             enote_ephemeral_pubkey,
             input_context,
             onetime_address,
@@ -41,8 +40,8 @@ impl ViewBalanceSecretDevice for ViewBalanceSecret {
         input_context: &InputContext,
         onetime_address: &OutputPubkey,
     ) -> Result<ViewTag> {
-        Ok(make_carrot_view_tag(
-            &self.0.0,
+        Ok(ViewTag::derive(
+            self.as_bytes(),
             input_context,
             onetime_address,
         ))
@@ -53,8 +52,8 @@ impl ViewBalanceSecretDevice for ViewBalanceSecret {
         enote_ephemeral_pubkey: &EnoteEphemeralPubkey,
         input_context: &InputContext,
     ) -> Result<SenderReceiverSecret> {
-        Ok(make_carrot_sender_receiver_secret(
-            &self.0.0,
+        Ok(SenderReceiverSecret::derive(
+            self.as_bytes(),
             enote_ephemeral_pubkey,
             input_context,
         ))
@@ -67,7 +66,7 @@ impl GenerateAddressSecretDevice for GenerateAddressSecret {
         major_index: u32,
         minor_index: u32,
     ) -> Result<AddressIndexGeneratorSecret> {
-        Ok(make_carrot_index_extension_generator(
+        Ok(AddressIndexGeneratorSecret::derive(
             self,
             major_index,
             minor_index,

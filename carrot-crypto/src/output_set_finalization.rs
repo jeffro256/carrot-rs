@@ -1,7 +1,8 @@
 use core::ops::{Index, IndexMut};
 
+use crate::*;
+use crate::as_crypto::AsEdwardsPoint;
 use crate::consts::*;
-use crate::core_types::*;
 use crate::destination::CarrotDestinationV1;
 use crate::device::ViewBalanceSecretDevice;
 use crate::device::ViewIncomingKeyDevice;
@@ -133,7 +134,7 @@ fn check_normal_proposals_randomness(
 ) -> Result<()> {
     // assert anchor_norm != 0 for payments
     for normal_payment_proposal in normal_payment_proposals.iter() {
-        if normal_payment_proposal.randomness == NULL_JANUS_ANCHOR {
+        if normal_payment_proposal.randomness == Default::default() {
             return Err(Error::new(ErrorKind::MissingRandomness));
         }
     }
@@ -186,7 +187,7 @@ where
     // assert there is a max of 1 integrated address payment proposals
     let mut num_integrated = 0;
     for normal_payment_proposal in normal_payment_proposals.iter() {
-        if normal_payment_proposal.destination.payment_id != NULL_PAYMENT_ID {
+        if normal_payment_proposal.destination.payment_id != Default::default() {
             num_integrated += 1;
         }
     }
@@ -215,7 +216,7 @@ where
         output_enote_proposals_out[i] = output_enote_proposal;
 
         // set pid_enc from integrated address proposal pic_enc
-        if normal_payment_proposals[i].destination.payment_id != NULL_PAYMENT_ID {
+        if normal_payment_proposals[i].destination.payment_id != Default::default() {
             *encrypted_payment_id_out = encrypted_payment_id;
         }
     }
@@ -286,12 +287,12 @@ where
         let a_pk_bytes = &output_enote_proposals_out[a_output_idx]
             .enote
             .onetime_address
-            .0
+            .as_edwards_ref()
             .0;
         let b_pk_bytes = &output_enote_proposals_out[b_output_idx]
             .enote
             .onetime_address
-            .0
+            .as_edwards_ref()
             .0;
         a_pk_bytes.cmp(b_pk_bytes)
     });
@@ -325,11 +326,11 @@ where
     // assert a) uniqueness of K_o, b) all K_o lie in prime order subgroup, and c) K_o is sorted
     for i in 0..output_enote_proposals_out.len() {
         let i_out_pk = &output_enote_proposals_out[i].enote.onetime_address;
-        if is_invalid_or_has_torsion(&i_out_pk.0) {
+        if is_invalid_or_has_torsion(i_out_pk) {
             return Err(Error::new(ErrorKind::BadAddressPoints));
         } else if i > 0 {
             let prev_out_pk = &output_enote_proposals_out[i - 1].enote.onetime_address;
-            if &prev_out_pk.0.0 >= &i_out_pk.0.0 {
+            if &prev_out_pk.as_edwards_ref().0 >= &i_out_pk.as_edwards_ref().0 {
                 return Err(Error::new(ErrorKind::MissingRandomness));
             }
         }
@@ -404,19 +405,19 @@ pub fn get_coinbase_output_enotes(
 
     // sort enotes by K_o
     payment_proposal_order_out.sort_by(|a_idx, b_idx| {
-        let a_pk_bytes = &output_coinbase_enotes_out[*a_idx].onetime_address.0.0;
-        let b_pk_bytes = &output_coinbase_enotes_out[*b_idx].onetime_address.0.0;
+        let a_pk_bytes = &output_coinbase_enotes_out[*a_idx].onetime_address.as_edwards_ref().0;
+        let b_pk_bytes = &output_coinbase_enotes_out[*b_idx].onetime_address.as_edwards_ref().0;
         a_pk_bytes.cmp(&b_pk_bytes)
     });
 
     // assert a) uniqueness of K_o, b) all K_o lie in prime order subgroup, and c) K_o is sorted
     for i in 0..output_coinbase_enotes_out.len() {
         let i_out_pk = &output_coinbase_enotes_out[i].onetime_address;
-        if is_invalid_or_has_torsion(&i_out_pk.0) {
+        if is_invalid_or_has_torsion(i_out_pk) {
             return Err(Error::new(ErrorKind::BadAddressPoints));
         } else if i > 0 {
             let prev_out_pk = &output_coinbase_enotes_out[i - 1].onetime_address;
-            if &prev_out_pk.0.0 >= &i_out_pk.0.0 {
+            if &prev_out_pk.as_edwards_ref().0 >= &i_out_pk.as_edwards_ref().0 {
                 return Err(Error::new(ErrorKind::MissingRandomness));
             }
         }

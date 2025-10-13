@@ -1,9 +1,9 @@
-use crate::core_types::*;
+use crate::*;
+use crate::as_crypto::AsMontgomeryPoint;
 use crate::destination::CarrotDestinationV1;
 use crate::device::ViewIncomingKeyDevice;
 use crate::device::{self, ViewBalanceSecretDevice};
 use crate::enote::*;
-use crate::enote_utils::*;
 use crate::scan_unsafe::*;
 
 fn is_main_address_spend_pubkey(
@@ -33,10 +33,10 @@ fn try_scan_carrot_coinbase_enote_checked(
 
     if !verify_carrot_normal_janus_protection(
         &nominal_janus_anchor,
-        &make_carrot_input_context_coinbase(enote.block_index),
+        &InputContext::new_coinbase(enote.block_index),
         &address_spend_pubkey,
         /*is_subaddress=*/ false,
-        &NULL_PAYMENT_ID,
+        &Default::default(),
         &enote.enote_ephemeral_pubkey,
     ) {
         return None;
@@ -80,7 +80,7 @@ fn try_scan_carrot_enote_external_normal_checked(
 
     let verified_normal_janus = unsafe {
         verify_carrot_normal_janus_protection_and_confirm_pid(
-            &make_carrot_input_context(&enote.tx_first_key_image),
+            &&&InputContext::new_ringct(&enote.tx_first_key_image),
             &address_spend_pubkey,
             !is_main_address_spend_pubkey(&address_spend_pubkey, main_address_spend_pubkeys),
             &enote.enote_ephemeral_pubkey,
@@ -106,7 +106,7 @@ pub fn make_carrot_uncontextualized_shared_key_receiver<VI: ViewIncomingKeyDevic
     k_view_dev: &VI,
     enote_ephemeral_pubkey: &EnoteEphemeralPubkey,
 ) -> device::Result<MontgomeryECDH> {
-    k_view_dev.view_key_scalar_mult_x25519(&enote_ephemeral_pubkey.0)
+    k_view_dev.view_key_scalar_mult_x25519(enote_ephemeral_pubkey)
 }
 
 pub fn try_scan_carrot_coinbase_enote_sender_with_anchor_norm(
@@ -114,9 +114,9 @@ pub fn try_scan_carrot_coinbase_enote_sender_with_anchor_norm(
     destination: &CarrotDestinationV1,
     anchor_norm: &JanusAnchor,
 ) -> Option<(OnetimeExtensionG, OnetimeExtensionT)> {
-    let enote_ephemeral_privkey = make_carrot_enote_ephemeral_privkey(
+    let enote_ephemeral_privkey = EnoteEphemeralKey::derive(
         anchor_norm,
-        &make_carrot_input_context_coinbase(enote.block_index),
+        &InputContext::new_coinbase(enote.block_index),
         &destination.address_spend_pubkey,
         &destination.payment_id,
     );
@@ -134,7 +134,7 @@ pub fn try_scan_carrot_coinbase_enote_sender_with_ephemeral_key(
     enote_ephemeral_privkey: &EnoteEphemeralKey,
 ) -> Option<(OnetimeExtensionG, OnetimeExtensionT)> {
     // s_sr = d_e ConvertPointE(K^j_v)
-    let s_sender_receiver_unctx = make_carrot_uncontextualized_shared_key_sender(
+    let s_sender_receiver_unctx = MontgomeryECDH::derive_as_sender(
         enote_ephemeral_privkey,
         &destination.address_view_pubkey,
     )?;
@@ -178,9 +178,9 @@ pub fn try_scan_carrot_enote_external_sender_with_anchor_norm(
     AmountBlindingKey,
     CarrotEnoteType,
 )> {
-    let enote_ephemeral_privkey = make_carrot_enote_ephemeral_privkey(
+    let enote_ephemeral_privkey = EnoteEphemeralKey::derive(
         anchor_norm,
-        &make_carrot_input_context(&enote.tx_first_key_image),
+        &InputContext::new_ringct(&enote.tx_first_key_image),
         &destination.address_spend_pubkey,
         &destination.payment_id,
     );
@@ -208,7 +208,7 @@ pub fn try_scan_carrot_enote_external_sender_with_ephemeral_key(
     CarrotEnoteType,
 )> {
     // s_sr = d_e ConvertPointE(K^j_v)
-    let s_sender_receiver_unctx = make_carrot_uncontextualized_shared_key_sender(
+    let s_sender_receiver_unctx = MontgomeryECDH::derive_as_sender(
         enote_ephemeral_privkey,
         &destination.address_view_pubkey,
     )?;
@@ -341,7 +341,7 @@ pub fn try_scan_carrot_enote_internal_receiver<VB: ViewBalanceSecretDevice>(
     JanusAnchor,
 )> {
     // input_context
-    let input_context = make_carrot_input_context(&enote.tx_first_key_image);
+    let input_context = InputContext::new_ringct(&enote.tx_first_key_image);
 
     // vt = H_3(s_sr || input_context || Ko)
     let nominal_view_tag = s_view_balance_dev
