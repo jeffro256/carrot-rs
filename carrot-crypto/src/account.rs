@@ -114,13 +114,15 @@ impl AddressIndexGeneratorSecret {
 impl SubaddressScalarSecret {
     pub fn derive(
         account_spend_pubkey: &AddressSpendPubkey,
+        account_view_pubkey: &AddressViewPubkey,
         s_address_generator: &AddressIndexGeneratorSecret,
         j_major: u32,
         j_minor: u32,
     ) -> Self {
-        // k^j_subscal = H_n(K_s, j_major, j_minor, s^j_gen)
+        // k^j_subscal = H_n[s^j_gen](K_s, K_v, j_major, j_minor)
         let transcript = make_carrot_transcript!(domain_separators::SUBADDRESS_SCALAR,
-            AddressSpendPubkey : account_spend_pubkey, u32 : &j_major, u32 : &j_minor);
+            AddressSpendPubkey : account_spend_pubkey, AddressViewPubkey : account_view_pubkey,
+            u32 : &j_major, u32 : &j_minor);
         Self(derive_scalar(&transcript, s_address_generator.as_bytes()))
     }
 }
@@ -204,9 +206,10 @@ mod test {
     #[test]
     fn converge_make_carrot_subaddress_scalar() {
         assert_eq_hex!(
-            "25d97acc4f6b58478ee97ee9b308be756401130c1e9f3a48a5370c1a2ce0e50e",
+            "824e9710a9ee164dcf225be9ced906ceb53a0e93326b199a79340f6c0c7e050d",
             SubaddressScalarSecret::derive(
                 &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f"),
+                &hex_into!("a30c1b720a66557c03a9784c6dd0902c95ee56670e04907d18eaa20608a72e7e"),
                 &hex_into!("79ad2383f44b4d26413adb7ae79c5658b2a8c20b6f5046bfa9f229bfcf1744a7"),
                 5,
                 16)

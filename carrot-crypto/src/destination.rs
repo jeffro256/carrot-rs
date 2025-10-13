@@ -44,9 +44,10 @@ impl CarrotDestinationV1 {
             .make_index_extension_generator(major_index, minor_index)
             .ok()?;
 
-        // k^j_subscal = H_n(K_s, j_major, j_minor, s^j_gen)
+        // k^j_subscal = H_n[s^j_gen](K_s, K_v, j_major, j_minor)
         let subaddress_scalar = SubaddressScalarSecret::derive(
-            &account_spend_pubkey,
+            account_spend_pubkey,
+            account_view_pubkey,
             &address_index_generator,
             major_index,
             minor_index,
@@ -131,10 +132,10 @@ mod test {
             5,
             16).unwrap();
         assert_eq_hex!(
-            "1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0",
+            "cb84becce21364e6fc91f6cec459ae917287bc3d87791369f8ff0fc40e4fcc08",
             subaddress.address_spend_pubkey);
         assert_eq_hex!(
-            "75b7bc7759da5d9ad5ff421650949b27a13ea369685eb4d1bd59abc518e25fe2",
+            "82800b2b97f50a798768d3235eabe9d4b3d5bd6d12956975b79db53f29895bdd",
             subaddress.address_view_pubkey);
     }
 }

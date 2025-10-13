@@ -1,8 +1,6 @@
 use carrot_crypto::{*, opening::{OpenedPoint, OpeningScalarSecret}};
-use sha3::{digest::Output, Digest, Keccak256};
+use sha3::{Digest, Keccak256};
 use std::collections::HashMap;
-
-use crate::common::math::scalar_mul_gt;
 
 #[derive(Clone, Copy)]
 pub enum AddressDeriveType {
@@ -128,9 +126,10 @@ impl MockKeys {
                     );
 
                     let subaddress_scalar = if is_subaddress {
-                        // k^j_subscal = H_n(K_s, j_major, j_minor, s^j_gen)
+                        // k^j_subscal = H_n[s^j_gen](K_s, K_v, j_major, j_minor)
                         SubaddressScalarSecret::derive(
                             &self.carrot_account_spend_pubkey,
+                            &self.carrot_account_view_pubkey,
                             &address_index_generator,
                             major_index,
                             minor_index,
