@@ -1,6 +1,6 @@
-use crate::*;
 use crate::as_crypto::{AsMontgomeryPoint, AsScalar};
 use crate::device::*;
+use crate::*;
 
 impl ViewIncomingKeyDevice for ViewIncomingKey {
     #[allow(non_snake_case)]
@@ -12,10 +12,7 @@ impl ViewIncomingKeyDevice for ViewIncomingKey {
     }
 
     #[allow(non_snake_case)]
-    fn view_key_scalar_mult_x25519(
-        &self,
-        D: &EnoteEphemeralPubkey,
-    ) -> Result<MontgomeryECDH> {
+    fn view_key_scalar_mult_x25519(&self, D: &EnoteEphemeralPubkey) -> Result<MontgomeryECDH> {
         Ok(MontgomeryECDH::derive_as_receiver(self, D))
     }
 

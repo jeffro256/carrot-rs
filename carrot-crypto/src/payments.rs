@@ -1,12 +1,12 @@
 use core::fmt::{Debug, Display};
 
-use crate::*;
 use crate::as_crypto::AsMontgomeryPoint;
 use crate::destination::*;
 use crate::device;
 use crate::device::ViewBalanceSecretDevice;
 use crate::device::ViewIncomingKeyDevice;
 use crate::enote::*;
+use crate::*;
 
 ////
 // CarrotPaymentProposalV1
@@ -263,10 +263,12 @@ impl CarrotPaymentProposalV1 {
         // d_e = H_n(anchor_norm, input_context, K^j_s, pid))
         let enote_ephemeral_privkey = get_enote_ephemeral_privkey(self, input_context);
 
-        EnoteEphemeralPubkey::derive_to(&enote_ephemeral_privkey,
+        EnoteEphemeralPubkey::derive_to(
+            &enote_ephemeral_privkey,
             &self.destination.address_spend_pubkey,
-            self.destination.is_subaddress
-        ).ok_or(Error::new(ErrorKind::BadAddressPoints))
+            self.destination.is_subaddress,
+        )
+        .ok_or(Error::new(ErrorKind::BadAddressPoints))
     }
 
     pub fn get_coinbase_output_proposal(
@@ -276,7 +278,9 @@ impl CarrotPaymentProposalV1 {
         // 1. sanity checks
         if self.randomness == Default::default() {
             return Err(Error::new(ErrorKind::MissingRandomness));
-        } else if self.destination.is_subaddress || self.destination.payment_id != Default::default() {
+        } else if self.destination.is_subaddress
+            || self.destination.payment_id != Default::default()
+        {
             return Err(Error::new(ErrorKind::WrongAddressType));
         }
 
@@ -395,9 +399,8 @@ impl CarrotPaymentProposalSelfSendV1 {
             try_resolve_selfsend_enote_ephemeral_pubkey(self, other_enote_ephemeral_pubkey)?;
 
         // 4. s_sr = k_v D_e
-        let s_sender_receiver_unctx = coerce_device_result(
-            k_view_dev.view_key_scalar_mult_x25519(enote_ephemeral_pubkey),
-        )?;
+        let s_sender_receiver_unctx =
+            coerce_device_result(k_view_dev.view_key_scalar_mult_x25519(enote_ephemeral_pubkey))?;
 
         // 5. build the output enote address pieces
         let (
@@ -427,8 +430,11 @@ impl CarrotPaymentProposalSelfSendV1 {
         ))?;
 
         // 7. encrypt special anchor: anchor_enc = anchor XOR m_anchor
-        let anchor_enc =
-            EncryptedJanusAnchor::encrypt(&janus_anchor_special, &s_sender_receiver, &onetime_address);
+        let anchor_enc = EncryptedJanusAnchor::encrypt(
+            &janus_anchor_special,
+            &s_sender_receiver,
+            &onetime_address,
+        );
 
         // 8. save the enote ephemeral pubkey, first tx key image, and amount
         Ok(RCTOutputEnoteProposal {
@@ -488,9 +494,8 @@ impl CarrotPaymentProposalSelfSendV1 {
         let anchor = self.internal_message.clone().unwrap_or_default();
 
         // 8. encrypt anchor: anchor_enc = anchor XOR m_anchor
-        let anchor_enc = EncryptedJanusAnchor::encrypt(&anchor,
-            &s_sender_receiver,
-            &onetime_address);
+        let anchor_enc =
+            EncryptedJanusAnchor::encrypt(&anchor, &s_sender_receiver, &onetime_address);
 
         // 9. save the enote ephemeral pubkey, first tx key image, and amount
         Ok(RCTOutputEnoteProposal {

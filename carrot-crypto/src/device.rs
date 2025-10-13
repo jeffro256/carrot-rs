@@ -1,5 +1,5 @@
 use core::fmt::{Debug, Display};
-use curve25519_dalek::{EdwardsPoint};
+use curve25519_dalek::EdwardsPoint;
 
 use crate::*;
 

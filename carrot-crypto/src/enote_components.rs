@@ -1,8 +1,7 @@
-use curve25519_dalek::edwards::CompressedEdwardsY;
 use curve25519_dalek::MontgomeryPoint;
+use curve25519_dalek::edwards::CompressedEdwardsY;
 use zeroize::ZeroizeOnDrop;
 
-use crate::*;
 use crate::as_crypto::AsEdwardsPoint;
 use crate::as_crypto::AsMontgomeryPoint;
 use crate::as_crypto::AsScalar;
@@ -13,6 +12,7 @@ use crate::math_utils::*;
 use crate::random::Random;
 use crate::transcript::*;
 use crate::type_macros::*;
+use crate::*;
 
 define_tiny_edwards_type! {OutputPubkey}
 define_tiny_edwards_type! {AmountCommitment}
@@ -21,8 +21,8 @@ define_tiny_edwards_type! {KeyImage}
 define_tiny_edwards_type! {OnetimeExtension}
 
 /// X25519 ECDH point secret
-define_tiny_montgomery_type!{MontgomeryECDH, ZeroizeOnDrop}
-define_tiny_montgomery_type!{EnoteEphemeralPubkey,}
+define_tiny_montgomery_type! {MontgomeryECDH, ZeroizeOnDrop}
+define_tiny_montgomery_type! {EnoteEphemeralPubkey,}
 
 define_tiny_scalar_type! {AmountBlindingKey}
 define_tiny_scalar_type! {EnoteEphemeralKey}
@@ -61,7 +61,8 @@ pub enum CarrotEnoteType {
 }
 
 impl EnoteEphemeralKey {
-    pub fn derive(anchor_norm: &JanusAnchor,
+    pub fn derive(
+        anchor_norm: &JanusAnchor,
         input_context: &InputContext,
         address_spend_pubkey: &AddressSpendPubkey,
         payment_id: &PaymentId,
@@ -80,19 +81,21 @@ impl EnoteEphemeralPubkey {
         Self(scalar_mul_base_montgomery(enote_ephemeral_privkey))
     }
 
-    pub fn derive_to_subaddress(enote_ephemeral_privkey: &EnoteEphemeralKey,
-        address_spend_pubkey: &AddressSpendPubkey
+    pub fn derive_to_subaddress(
+        enote_ephemeral_privkey: &EnoteEphemeralKey,
+        address_spend_pubkey: &AddressSpendPubkey,
     ) -> Option<Self> {
         // D_e = ConvertPointE(d_e K^j_s)
         #[allow(non_snake_case)]
-        let K_e: CompressedEdwardsY = scalar_mul_key(enote_ephemeral_privkey,
-            address_spend_pubkey)?;
+        let K_e: CompressedEdwardsY =
+            scalar_mul_key(enote_ephemeral_privkey, address_spend_pubkey)?;
         Some(Self(convert_to_montgomery_vartime(&K_e)?))
     }
 
-    pub fn derive_to(enote_ephemeral_privkey: &EnoteEphemeralKey,
+    pub fn derive_to(
+        enote_ephemeral_privkey: &EnoteEphemeralKey,
         address_spend_pubkey: &AddressSpendPubkey,
-        is_subaddress: bool
+        is_subaddress: bool,
     ) -> Option<Self> {
         if is_subaddress {
             // D_e = d_e ConvertPointE(K^j_s)
@@ -105,7 +108,8 @@ impl EnoteEphemeralPubkey {
 }
 
 impl MontgomeryECDH {
-    pub fn derive_as_receiver(k_view: &ViewIncomingKey,
+    pub fn derive_as_receiver(
+        k_view: &ViewIncomingKey,
         enote_ephemeral_pubkey: &EnoteEphemeralPubkey,
     ) -> Self {
         // s_sr = k_v D_e
@@ -181,8 +185,11 @@ impl AmountBlindingKey {
 impl AmountCommitment {
     pub fn commit(amount: Amount, amount_blinding_factor: &AmountBlindingKey) -> Self {
         // z G + a H
-        Self((curve25519_dalek::EdwardsPoint::mul_base(amount_blinding_factor.as_scalar_ref())
-            + curve25519_dalek::Scalar::from(amount) * *monero_generators::H).compress())
+        Self(
+            (curve25519_dalek::EdwardsPoint::mul_base(amount_blinding_factor.as_scalar_ref())
+                + curve25519_dalek::Scalar::from(amount) * *monero_generators::H)
+                .compress(),
+        )
     }
 
     pub fn clear_commit(amount: Amount) -> Self {
@@ -216,12 +223,16 @@ impl OnetimeExtensionT {
 }
 
 impl OnetimeExtension {
-    pub fn derive_from_extension_scalars(onetime_ext_g: &OnetimeExtensionG, onetime_ext_t: &OnetimeExtensionT) -> Self {
+    pub fn derive_from_extension_scalars(
+        onetime_ext_g: &OnetimeExtensionG,
+        onetime_ext_t: &OnetimeExtensionT,
+    ) -> Self {
         // K^o_ext = k^o_g G + k^o_t T
         Self(scalar_mul_gt(onetime_ext_g, onetime_ext_t))
     }
 
-    pub fn derive_from_sender_receiver_secret(s_sender_receiver: &SenderReceiverSecret,
+    pub fn derive_from_sender_receiver_secret(
+        s_sender_receiver: &SenderReceiverSecret,
         amount_commitment: &AmountCommitment,
     ) -> Self {
         // k^o_g = H_n("..g..", s^ctx_sr, C_a)
@@ -236,11 +247,15 @@ impl OnetimeExtension {
 }
 
 impl OutputPubkey {
-    pub fn derive_from_extension(address_spend_pubkey: &AddressSpendPubkey,
-        sender_extension_pubkey: OnetimeExtension) -> Option<Self>
-    {
+    pub fn derive_from_extension(
+        address_spend_pubkey: &AddressSpendPubkey,
+        sender_extension_pubkey: OnetimeExtension,
+    ) -> Option<Self> {
         // Ko = K^j_s + K^o_ext
-        Some(Self(add_edwards(address_spend_pubkey, &sender_extension_pubkey)?))
+        Some(Self(add_edwards(
+            address_spend_pubkey,
+            &sender_extension_pubkey,
+        )?))
     }
 
     pub fn derive_from_sender_receiver_secret(
@@ -249,11 +264,16 @@ impl OutputPubkey {
         amount_commitment: &AmountCommitment,
     ) -> Option<Self> {
         // K^o_ext = k^o_g G + k^o_t T
-        let sender_extension_pubkey =
-            OnetimeExtension::derive_from_sender_receiver_secret(s_sender_receiver, amount_commitment);
+        let sender_extension_pubkey = OnetimeExtension::derive_from_sender_receiver_secret(
+            s_sender_receiver,
+            amount_commitment,
+        );
 
         // Ko = K^j_s + K^o_ext
-        Some(Self(add_edwards(address_spend_pubkey, &sender_extension_pubkey)?))
+        Some(Self(add_edwards(
+            address_spend_pubkey,
+            &sender_extension_pubkey,
+        )?))
     }
 }
 
@@ -264,18 +284,24 @@ impl AddressSpendPubkey {
         amount_commitment: &AmountCommitment,
     ) -> Option<Self> {
         // K^o_ext = k^o_g G + k^o_t T
-        let sender_extension_pubkey =
-            OnetimeExtension::derive_from_sender_receiver_secret(s_sender_receiver, amount_commitment);
+        let sender_extension_pubkey = OnetimeExtension::derive_from_sender_receiver_secret(
+            s_sender_receiver,
+            amount_commitment,
+        );
 
         // K^j_s = Ko - K^o_ext
-        Some(Self::from_inner(sub_edwards(onetime_address, &sender_extension_pubkey)?))
+        Some(Self::from_inner(sub_edwards(
+            onetime_address,
+            &sender_extension_pubkey,
+        )?))
     }
 }
 
 impl ViewTag {
-    pub fn derive(s_sender_receiver_unctx: &[u8; 32],
+    pub fn derive(
+        s_sender_receiver_unctx: &[u8; 32],
         input_context: &InputContext,
-        onetime_address: &OutputPubkey
+        onetime_address: &OutputPubkey,
     ) -> Self {
         // vt = H_3(s_sr || input_context || Ko)
         let transcript = make_carrot_transcript!(domain_separators::VIEW_TAG,
@@ -287,10 +313,11 @@ impl ViewTag {
         &self,
         s_sender_receiver_unctx: &[u8; 32],
         input_context: &InputContext,
-        onetime_address: &OutputPubkey
+        onetime_address: &OutputPubkey,
     ) -> bool {
         // vt' = H_3(s_sr || input_context || Ko)
-        let nominal_view_tag = Self::derive(s_sender_receiver_unctx, input_context, onetime_address);
+        let nominal_view_tag =
+            Self::derive(s_sender_receiver_unctx, input_context, onetime_address);
 
         // vt' ?= vt
         &nominal_view_tag == self
@@ -310,7 +337,10 @@ struct AmountEncryptionMask([u8; ENCRYPTED_AMOUNT_BYTES]);
 struct PaymentIdEncryptionMask([u8; PAYMENT_ID_BYTES]);
 
 impl AnchorEncryptionMask {
-    pub fn derive(s_sender_receiver: &SenderReceiverSecret, onetime_address: &OutputPubkey) -> Self {
+    pub fn derive(
+        s_sender_receiver: &SenderReceiverSecret,
+        onetime_address: &OutputPubkey,
+    ) -> Self {
         // m_anchor = H_16(s^ctx_sr, Ko)
         let transcript = make_carrot_transcript!(domain_separators::ENCRYPTION_MASK_ANCHOR,
             OutputPubkey : onetime_address);
@@ -331,7 +361,8 @@ impl EncryptedJanusAnchor {
         Self::from(xor_bytes(anchor.as_bytes(), &mask.0))
     }
 
-    pub fn decrypt(&self,
+    pub fn decrypt(
+        &self,
         s_sender_receiver: &SenderReceiverSecret,
         onetime_address: &OutputPubkey,
     ) -> JanusAnchor {
@@ -339,12 +370,15 @@ impl EncryptedJanusAnchor {
         let mask = AnchorEncryptionMask::derive(s_sender_receiver, onetime_address);
 
         // anchor = anchor_enc XOR m_anchor
-        JanusAnchor::from(xor_bytes(self.as_bytes(),&mask.0))
+        JanusAnchor::from(xor_bytes(self.as_bytes(), &mask.0))
     }
 }
 
 impl AmountEncryptionMask {
-    pub fn derive(s_sender_receiver: &SenderReceiverSecret, onetime_address: &OutputPubkey) -> Self {
+    pub fn derive(
+        s_sender_receiver: &SenderReceiverSecret,
+        onetime_address: &OutputPubkey,
+    ) -> Self {
         // m_a = H_8(s^ctx_sr, Ko)
         let transcript = make_carrot_transcript!(domain_separators::ENCRYPTION_MASK_AMOUNT,
             OutputPubkey : onetime_address);
@@ -379,7 +413,10 @@ impl EncryptedAmount {
 }
 
 impl PaymentIdEncryptionMask {
-    pub fn derive(s_sender_receiver: &SenderReceiverSecret, onetime_address: &OutputPubkey) -> Self {
+    pub fn derive(
+        s_sender_receiver: &SenderReceiverSecret,
+        onetime_address: &OutputPubkey,
+    ) -> Self {
         // m_pid = H_8(s^ctx_sr, Ko)
         let transcript = make_carrot_transcript!(domain_separators::ENCRYPTION_MASK_PAYMENT_ID,
             OutputPubkey : onetime_address);
@@ -415,13 +452,14 @@ impl EncryptedPaymentId {
 
 impl JanusAnchor {
     pub fn new_randomness<R>(rng: &mut R) -> Self
-        where R: rand_core::CryptoRngCore + ?Sized
+    where
+        R: rand_core::CryptoRngCore + ?Sized,
     {
         Self::new_random_with_params(rng, ())
     }
 
     pub fn derive_special(
-            enote_ephemeral_pubkey: &EnoteEphemeralPubkey,
+        enote_ephemeral_pubkey: &EnoteEphemeralPubkey,
         input_context: &InputContext,
         onetime_address: &OutputPubkey,
         k_view: &ViewIncomingKey,
@@ -429,7 +467,10 @@ impl JanusAnchor {
         // anchor_sp = H_16(D_e, input_context, Ko, k_v)
         let transcript = make_carrot_transcript!(domain_separators::JANUS_ANCHOR_SPECIAL,
             EnoteEphemeralPubkey : enote_ephemeral_pubkey, InputContext : input_context, OutputPubkey : onetime_address);
-        Self::from(derive_bytes_16(&transcript, k_view.as_scalar_ref().as_bytes()))
+        Self::from(derive_bytes_16(
+            &transcript,
+            k_view.as_scalar_ref().as_bytes(),
+        ))
     }
 }
 
@@ -449,8 +490,8 @@ pub fn try_recompute_carrot_amount_commitment(
     );
 
     // C_a' = k_a' G + a' H
-    let nominal_amount_commitment = AmountCommitment::commit(nominal_amount,
-        &amount_blinding_factor);
+    let nominal_amount_commitment =
+        AmountCommitment::commit(nominal_amount, &amount_blinding_factor);
 
     // C_a' ?= C_a
     if &nominal_amount_commitment == amount_commitment {
@@ -565,15 +606,19 @@ mod test {
                 &hex_into!("caee1381775487a0982557f0d2680b55"),
                 &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
                 &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
-                &hex_into!("4321734f56621440")));
+                &hex_into!("4321734f56621440")
+            )
+        );
     }
 
     #[test]
     fn converge_make_carrot_enote_ephemeral_pubkey_cryptonote() {
         assert_eq_hex!(
             "2987777565c02409dfe871cc27b2334f5ade9d4ad014012c568367b80e99c666",
-            EnoteEphemeralPubkey::derive_to_cryptonote_address(
-                &hex_into!("f57ff2d7c898b755137b69e8d826801945ed72e9951850de908e9d645a0bb00d")));
+            EnoteEphemeralPubkey::derive_to_cryptonote_address(&hex_into!(
+                "f57ff2d7c898b755137b69e8d826801945ed72e9951850de908e9d645a0bb00d"
+            ))
+        );
     }
 
     #[test]
@@ -583,7 +628,9 @@ mod test {
             EnoteEphemeralPubkey::derive_to_subaddress(
                 &hex_into!("f57ff2d7c898b755137b69e8d826801945ed72e9951850de908e9d645a0bb00d"),
                 &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0")
-            ).unwrap());
+            )
+            .unwrap()
+        );
     }
 
     #[test]
@@ -593,7 +640,8 @@ mod test {
             MontgomeryECDH::derive_as_receiver(
                 &hex_into!("60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200"),
                 &hex_into!("d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55")
-            ));
+            )
+        );
     }
 
     #[test]
@@ -603,7 +651,9 @@ mod test {
             MontgomeryECDH::derive_as_sender(
                 &hex_into!("f57ff2d7c898b755137b69e8d826801945ed72e9951850de908e9d645a0bb00d"),
                 &hex_into!("75b7bc7759da5d9ad5ff421650949b27a13ea369685eb4d1bd59abc518e25fe2")
-            ).unwrap());
+            )
+            .unwrap()
+        );
     }
 
     #[test]
@@ -614,7 +664,8 @@ mod test {
                 &hex_into!("baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451"),
                 &hex_into!("d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55"),
                 &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7")
-            ));
+            )
+        );
     }
 
     #[test]
@@ -626,7 +677,8 @@ mod test {
                 23000000000000,
                 &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
                 CarrotEnoteType::Payment
-            ));
+            )
+        );
     }
 
     #[test]
@@ -638,7 +690,8 @@ mod test {
                 23000000000000,
                 &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
                 CarrotEnoteType::Change
-            ));
+            )
+        );
     }
 
     #[test]
@@ -648,7 +701,8 @@ mod test {
             AmountCommitment::commit(
                 23000000000000,
                 &hex_into!("9fc3581e926a844877479d829ff9deeae17ce77feaf2c3c972923510e04f1f02"),
-            ));
+            )
+        );
     }
 
     #[test]
@@ -659,7 +713,9 @@ mod test {
                 &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
                 &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
                 &hex_into!("ca5f0fc2fe7a4fe628e6f08b2c0eb44f3af3b87e1619b2ed2de296f7e425512b")
-            ).unwrap());
+            )
+            .unwrap()
+        );
     }
 
     #[test]
@@ -670,7 +726,8 @@ mod test {
                 &hex_into!("baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451"),
                 &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
                 &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
-            ));
+            )
+        );
     }
 
     #[test]
@@ -680,7 +737,8 @@ mod test {
             AnchorEncryptionMask::derive(
                 &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
                 &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
-            ));
+            )
+        );
     }
 
     #[test]
@@ -690,7 +748,8 @@ mod test {
             AmountEncryptionMask::derive(
                 &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
                 &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
-            ));
+            )
+        );
     }
 
     #[test]
@@ -700,7 +759,8 @@ mod test {
             PaymentIdEncryptionMask::derive(
                 &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
                 &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
-            ));
+            )
+        );
     }
 
     #[test]
@@ -712,6 +772,7 @@ mod test {
                 &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
                 &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92"),
                 &hex_into!("60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200")
-            ));
+            )
+        );
     }
 }

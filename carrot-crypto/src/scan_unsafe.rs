@@ -1,7 +1,7 @@
-use crate::*;
 use crate::as_crypto::AsMontgomeryPoint;
 use crate::device::ViewIncomingKeyDevice;
 use crate::enote::{CarrotCoinbaseEnoteV1, CarrotEnoteV1};
+use crate::*;
 
 pub enum LazyAmountCommitment {
     Closed(AmountCommitment),
@@ -31,16 +31,17 @@ unsafe fn scan_carrot_dest_info(
     JanusAnchor,
 )> {
     // k^o_g = H_n("..g..", s^ctx_sr, C_a)
-    let sender_extension_g =
-        OnetimeExtensionG::derive(s_sender_receiver, amount_commitment);
+    let sender_extension_g = OnetimeExtensionG::derive(s_sender_receiver, amount_commitment);
 
     // k^o_t = H_n("..t..", s^ctx_sr, C_a)
-    let sender_extension_t =
-        OnetimeExtensionT::derive(s_sender_receiver, amount_commitment);
+    let sender_extension_t = OnetimeExtensionT::derive(s_sender_receiver, amount_commitment);
 
     // K^j_s = Ko - K^o_ext = Ko - (k^o_g G + k^o_t T)
     let address_spend_pubkey = AddressSpendPubkey::recover_from_onetime_address(
-        onetime_address, s_sender_receiver, amount_commitment)?;
+        onetime_address,
+        s_sender_receiver,
+        amount_commitment,
+    )?;
 
     // pid = pid_enc XOR m_pid, if applicable
     let nominal_payment_id = match encrypted_payment_id {
@@ -51,8 +52,7 @@ unsafe fn scan_carrot_dest_info(
     };
 
     // anchor = anchor_enc XOR m_anchor
-    let janus_anchor =
-        encrypted_janus_anchor.decrypt(&s_sender_receiver, &onetime_address);
+    let janus_anchor = encrypted_janus_anchor.decrypt(&s_sender_receiver, &onetime_address);
 
     Some((
         sender_extension_g,
@@ -84,7 +84,7 @@ unsafe fn try_scan_carrot_external_noamount(
     if !view_tag.derive_and_test(
         &s_sender_receiver_unctx.as_montgomery_ref().0,
         input_context,
-        onetime_address
+        onetime_address,
     ) {
         return None;
     }

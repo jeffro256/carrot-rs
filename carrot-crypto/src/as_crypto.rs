@@ -1,4 +1,4 @@
-use curve25519_dalek::{edwards::CompressedEdwardsY, MontgomeryPoint, Scalar};
+use curve25519_dalek::{MontgomeryPoint, Scalar, edwards::CompressedEdwardsY};
 
 pub trait AsEdwardsPoint {
     fn as_edwards_ref(&self) -> &CompressedEdwardsY;

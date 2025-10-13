@@ -1,6 +1,5 @@
 use core::ops::{Index, IndexMut};
 
-use crate::*;
 use crate::as_crypto::AsEdwardsPoint;
 use crate::consts::*;
 use crate::destination::CarrotDestinationV1;
@@ -12,6 +11,7 @@ use crate::payments::*;
 use crate::permutate::apply_permutation_backwards;
 use crate::random::Random;
 use crate::random::new_random;
+use crate::*;
 
 pub enum AdditionalOutputType {
     PaymentShared, // self-send proposal with enote_type="payment" with a shared D_e
@@ -405,8 +405,14 @@ pub fn get_coinbase_output_enotes(
 
     // sort enotes by K_o
     payment_proposal_order_out.sort_by(|a_idx, b_idx| {
-        let a_pk_bytes = &output_coinbase_enotes_out[*a_idx].onetime_address.as_edwards_ref().0;
-        let b_pk_bytes = &output_coinbase_enotes_out[*b_idx].onetime_address.as_edwards_ref().0;
+        let a_pk_bytes = &output_coinbase_enotes_out[*a_idx]
+            .onetime_address
+            .as_edwards_ref()
+            .0;
+        let b_pk_bytes = &output_coinbase_enotes_out[*b_idx]
+            .onetime_address
+            .as_edwards_ref()
+            .0;
         a_pk_bytes.cmp(&b_pk_bytes)
     });
 

@@ -60,27 +60,30 @@ impl GenerateAddressSecret {
 }
 
 impl AddressSpendPubkey {
-    pub fn derive_carrot_account_spend_pubkey(k_generate_image: &GenerateImageKey,
-        k_prove_spend: &ProveSpendKey
+    pub fn derive_carrot_account_spend_pubkey(
+        k_generate_image: &GenerateImageKey,
+        k_prove_spend: &ProveSpendKey,
     ) -> Self {
         // K_s = k_gi G + k_ps T
         Self(scalar_mul_gt(k_generate_image, k_prove_spend))
     }
 
-    pub fn derive_subaddress_spend_pubkey(subaddr_scalar: &SubaddressScalarSecret,
-        account_spend_pubkey: &AddressSpendPubkey
+    pub fn derive_subaddress_spend_pubkey(
+        subaddr_scalar: &SubaddressScalarSecret,
+        account_spend_pubkey: &AddressSpendPubkey,
     ) -> Option<Self> {
         Some(Self(scalar_mul_key(subaddr_scalar, account_spend_pubkey)?))
     }
 
     pub(crate) fn from_inner(p: CompressedEdwardsY) -> Self {
         Self(p)
-    }    
+    }
 }
 
 impl AddressViewPubkey {
-    pub fn derive_carrot_account_view_pubkey(k_view: &ViewIncomingKey,
-        spend_pubkey: &AddressSpendPubkey
+    pub fn derive_carrot_account_view_pubkey(
+        k_view: &ViewIncomingKey,
+        spend_pubkey: &AddressSpendPubkey,
     ) -> Option<Self> {
         // K^v = k_v K_s
         Some(Self(scalar_mul_key(k_view, spend_pubkey)?))
@@ -91,19 +94,16 @@ impl AddressViewPubkey {
         Self(scalar_mul_base(k_view))
     }
 
-    pub fn derive_subaddress_view_pubkey(subaddr_scalar: &SubaddressScalarSecret,
-        account_view_pubkey: &AddressViewPubkey
+    pub fn derive_subaddress_view_pubkey(
+        subaddr_scalar: &SubaddressScalarSecret,
+        account_view_pubkey: &AddressViewPubkey,
     ) -> Option<Self> {
         Some(Self(scalar_mul_key(subaddr_scalar, account_view_pubkey)?))
     }
 }
 
 impl AddressIndexGeneratorSecret {
-    pub fn derive(
-        s_generate_address: &GenerateAddressSecret,
-        j_major: u32,
-        j_minor: u32,
-    ) -> Self {
+    pub fn derive(s_generate_address: &GenerateAddressSecret, j_major: u32, j_minor: u32) -> Self {
         // s^j_gen = H_32[s_ga](j_major, j_minor)
         let transcript = make_carrot_transcript!(domain_separators::ADDRESS_INDEX_GEN,
             u32 : &j_major, u32 : &j_minor);
@@ -188,7 +188,8 @@ mod test {
             "c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f",
             AddressSpendPubkey::derive_carrot_account_spend_pubkey(
                 &hex_into!("336e3af233b3aa5bc95d5589aba67aab727727419899823acc6a6c4479e4ea04"),
-                &hex_into!("f10bf01839ea216e5d70b7c9ceaa8b8e9a432b5e98e6e48a8043ffb3fa229f0b"))
+                &hex_into!("f10bf01839ea216e5d70b7c9ceaa8b8e9a432b5e98e6e48a8043ffb3fa229f0b")
+            )
         );
     }
 
@@ -199,7 +200,8 @@ mod test {
             AddressIndexGeneratorSecret::derive(
                 &hex_into!("593ece76c5d24cbfe3c7ac9e2d455cdd4b372c89584700bf1c2e7bef2b70a4d1"),
                 5,
-            16)
+                16
+            )
         );
     }
 
@@ -212,7 +214,8 @@ mod test {
                 &hex_into!("a30c1b720a66557c03a9784c6dd0902c95ee56670e04907d18eaa20608a72e7e"),
                 &hex_into!("79ad2383f44b4d26413adb7ae79c5658b2a8c20b6f5046bfa9f229bfcf1744a7"),
                 5,
-                16)
+                16
+            )
         );
     }
 }

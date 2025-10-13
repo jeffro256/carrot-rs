@@ -1,10 +1,10 @@
-use crate::*;
 use crate::as_crypto::AsMontgomeryPoint;
 use crate::destination::CarrotDestinationV1;
 use crate::device::ViewIncomingKeyDevice;
 use crate::device::{self, ViewBalanceSecretDevice};
 use crate::enote::*;
 use crate::scan_unsafe::*;
+use crate::*;
 
 fn is_main_address_spend_pubkey(
     address_spend_pubkey: &AddressSpendPubkey,

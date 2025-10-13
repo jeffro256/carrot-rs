@@ -1,4 +1,4 @@
-use curve25519_dalek::{edwards::CompressedEdwardsY, MontgomeryPoint, Scalar};
+use curve25519_dalek::{MontgomeryPoint, Scalar, edwards::CompressedEdwardsY};
 
 use crate::as_crypto::*;
 

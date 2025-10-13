@@ -1,4 +1,7 @@
-use carrot_crypto::{*, opening::{OpenedPoint, OpeningScalarSecret}};
+use carrot_crypto::{
+    opening::{OpenedPoint, OpeningScalarSecret},
+    *,
+};
 use sha3::{Digest, Keccak256};
 use std::collections::HashMap;
 
@@ -166,7 +169,9 @@ impl MockKeys {
         // perform sanity check
         let addr = self.subaddress(subaddr_index);
         let recomputed_address_spend_pubkey = AddressSpendPubkey::from(OpenedPoint::scalar_mul_gt(
-            &address_privkey_g, &address_privkey_t));
+            &address_privkey_g,
+            &address_privkey_t,
+        ));
 
         assert_eq!(recomputed_address_spend_pubkey, addr.address_spend_pubkey);
 
@@ -219,11 +224,11 @@ impl MockKeys {
     ) -> bool {
         // first test that K^j_s + k^g_o G + k^t_o T ?= K_o
         // otherwise, there's a problem with the scan funcs
-        let sender_extension_pubkey = OnetimeExtension::derive_from_extension_scalars(
-            sender_extension_g,
-            sender_extension_t);
-        let recomputed_onetime_address = OutputPubkey::derive_from_extension(address_spend_pubkey,
-            sender_extension_pubkey).expect("OutputPubkey::derive_from_extension");
+        let sender_extension_pubkey =
+            OnetimeExtension::derive_from_extension_scalars(sender_extension_g, sender_extension_t);
+        let recomputed_onetime_address =
+            OutputPubkey::derive_from_extension(address_spend_pubkey, sender_extension_pubkey)
+                .expect("OutputPubkey::derive_from_extension");
         assert_eq!(&recomputed_onetime_address, onetime_address);
 
         let Some((x, y)) = self.try_searching_for_opening_for_onetime_address(
@@ -287,12 +292,15 @@ impl MockKeys {
     ) -> CarrotDestinationV1 {
         let subaddress_extension_scalar =
             Self::make_legacy_subaddress_extension(&k_view, major_index, minor_index);
-        let subaddress_extension = OpenedPoint::scalar_mul_gt(&subaddress_extension_scalar, 
-            &OpeningScalarSecret::default());
-        let address_spend_pubkey = AddressSpendPubkey::from(account_spend_pubkey +
-            &subaddress_extension);
-        let address_view_pubkey = AddressViewPubkey::derive_carrot_account_view_pubkey(k_view,
-            &address_spend_pubkey).expect("derive_carrot_account_view_pubkey (legacy)");
+        let subaddress_extension = OpenedPoint::scalar_mul_gt(
+            &subaddress_extension_scalar,
+            &OpeningScalarSecret::default(),
+        );
+        let address_spend_pubkey =
+            AddressSpendPubkey::from(account_spend_pubkey + &subaddress_extension);
+        let address_view_pubkey =
+            AddressViewPubkey::derive_carrot_account_view_pubkey(k_view, &address_spend_pubkey)
+                .expect("derive_carrot_account_view_pubkey (legacy)");
         let is_subaddress = major_index != 0 || minor_index != 0;
         CarrotDestinationV1 {
             address_spend_pubkey: address_spend_pubkey,
@@ -328,12 +336,15 @@ impl MockKeys {
             AddressViewPubkey::derive_primary_address_view_pubkey(&k_view_incoming);
 
         // derive carrot account pubkeys
-        let carrot_account_spend_pubkey =
-            AddressSpendPubkey::derive_carrot_account_spend_pubkey(&k_generate_image, &k_prove_spend);
+        let carrot_account_spend_pubkey = AddressSpendPubkey::derive_carrot_account_spend_pubkey(
+            &k_generate_image,
+            &k_prove_spend,
+        );
         let carrot_account_view_pubkey = AddressViewPubkey::derive_carrot_account_view_pubkey(
             &k_view_incoming,
             &carrot_account_spend_pubkey,
-        ).unwrap();
+        )
+        .unwrap();
 
         // derive subaddress map, Carrot and Legacy
         let mut subaddress_map = HashMap::new();

@@ -1,8 +1,8 @@
-use crate::*;
 use crate::consts::*;
 use crate::device::*;
 use crate::random::Random;
 use crate::type_macros::*;
+use crate::*;
 
 /// legacy payment ID
 define_tiny_byte_type! {PaymentId, PAYMENT_ID_BYTES}
@@ -120,22 +120,28 @@ mod test {
 
     #[test]
     fn converge_make_subaddress() {
-        let s_generate_address: GenerateAddressSecret
-            = hex_into!("593ece76c5d24cbfe3c7ac9e2d455cdd4b372c89584700bf1c2e7bef2b70a4d1");
+        let s_generate_address: GenerateAddressSecret =
+            hex_into!("593ece76c5d24cbfe3c7ac9e2d455cdd4b372c89584700bf1c2e7bef2b70a4d1");
 
         let subaddress = CarrotDestinationV1::make_subaddress(
             &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f"),
             &AddressViewPubkey::derive_carrot_account_view_pubkey(
                 &hex_into!("60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200"),
-                &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f")).unwrap(),
+                &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f"),
+            )
+            .unwrap(),
             &s_generate_address,
             5,
-            16).unwrap();
+            16,
+        )
+        .unwrap();
         assert_eq_hex!(
             "cb84becce21364e6fc91f6cec459ae917287bc3d87791369f8ff0fc40e4fcc08",
-            subaddress.address_spend_pubkey);
+            subaddress.address_spend_pubkey
+        );
         assert_eq_hex!(
             "82800b2b97f50a798768d3235eabe9d4b3d5bd6d12956975b79db53f29895bdd",
-            subaddress.address_view_pubkey);
+            subaddress.address_view_pubkey
+        );
     }
 }

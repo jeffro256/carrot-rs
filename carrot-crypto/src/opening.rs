@@ -1,4 +1,4 @@
-use curve25519_dalek::{edwards::CompressedEdwardsY, Scalar};
+use curve25519_dalek::{Scalar, edwards::CompressedEdwardsY};
 use zeroize::ZeroizeOnDrop;
 
 use crate::as_crypto::{AsEdwardsPoint, AsScalar};
@@ -49,11 +49,11 @@ macro_rules! impl_opening_add {
         }
     };
     ($lhs:path, $rhs:path) => {
-        impl_opening_add!{ncomm; $lhs, $rhs}
-        impl_opening_add!{ncomm; $rhs, $lhs}
+        impl_opening_add! {ncomm; $lhs, $rhs}
+        impl_opening_add! {ncomm; $rhs, $lhs}
     };
     ($bhs:path) => {
-        impl_opening_add!{ncomm; $bhs, $bhs}
+        impl_opening_add! {ncomm; $bhs, $bhs}
     };
 }
 
@@ -73,11 +73,11 @@ macro_rules! impl_opening_mul {
         }
     };
     ($lhs:path, $rhs:path) => {
-        impl_opening_mul!{ncomm; $lhs, $rhs}
-        impl_opening_mul!{ncomm; $rhs, $lhs}
+        impl_opening_mul! {ncomm; $lhs, $rhs}
+        impl_opening_mul! {ncomm; $rhs, $lhs}
     };
     ($bhs:path) => {
-        impl_opening_mul!{ncomm; $bhs, $bhs}
+        impl_opening_mul! {ncomm; $bhs, $bhs}
     };
 }
 
@@ -97,11 +97,11 @@ macro_rules! impl_opened_point_add {
         }
     };
     ($lhs:path, $rhs:path) => {
-        impl_opened_point_add!{ncomm; $lhs, $rhs}
-        impl_opened_point_add!{ncomm; $rhs, $lhs}
+        impl_opened_point_add! {ncomm; $lhs, $rhs}
+        impl_opened_point_add! {ncomm; $rhs, $lhs}
     };
     ($bhs:path) => {
-        impl_opened_point_add!{ncomm; $bhs, $bhs}
+        impl_opened_point_add! {ncomm; $bhs, $bhs}
     };
 }
 
@@ -115,14 +115,14 @@ macro_rules! impl_from_point {
     };
 }
 
-impl_opening_add!{crate::ProveSpendKey, OpeningScalarSecret}
-impl_opening_add!{crate::OnetimeExtensionG, OpeningScalarSecret}
-impl_opening_add!{crate::OnetimeExtensionT, OpeningScalarSecret}
+impl_opening_add! {crate::ProveSpendKey, OpeningScalarSecret}
+impl_opening_add! {crate::OnetimeExtensionG, OpeningScalarSecret}
+impl_opening_add! {crate::OnetimeExtensionT, OpeningScalarSecret}
 
-impl_opening_mul!{crate::ProveSpendKey, crate::SubaddressScalarSecret}
-impl_opening_mul!{crate::GenerateImageKey, crate::SubaddressScalarSecret}
+impl_opening_mul! {crate::ProveSpendKey, crate::SubaddressScalarSecret}
+impl_opening_mul! {crate::GenerateImageKey, crate::SubaddressScalarSecret}
 
-impl_opened_point_add!{crate::AddressSpendPubkey, OpenedPoint}
+impl_opened_point_add! {crate::AddressSpendPubkey, OpenedPoint}
 
-impl_from_point!{crate::AddressSpendPubkey}
-impl_from_point!{crate::OutputPubkey}
+impl_from_point! {crate::AddressSpendPubkey}
+impl_from_point! {crate::OutputPubkey}

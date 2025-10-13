@@ -4,7 +4,7 @@ pub use crate::random::Random;
 pub use crate::transcript::FromTranscriptBytes;
 pub use crate::transcript::ToTranscriptBytes;
 
-pub use curve25519_dalek::{edwards::CompressedEdwardsY, MontgomeryPoint, Scalar};
+pub use curve25519_dalek::{MontgomeryPoint, Scalar, edwards::CompressedEdwardsY};
 pub use generic_array::GenericArray;
 pub use zeroize::Zeroize;
 
@@ -35,7 +35,7 @@ macro_rules! define_tiny_type {
 
 macro_rules! define_tiny_edwards_type {
     ($tiny:ident) => {
-        define_tiny_type!{$tiny, CompressedEdwardsY, Default}
+        define_tiny_type! {$tiny, CompressedEdwardsY, Default}
         impl AsEdwardsPoint for $tiny {
             fn as_edwards_ref(&self) -> &CompressedEdwardsY {
                 &self.0
@@ -62,7 +62,7 @@ macro_rules! define_tiny_montgomery_type {
 
 macro_rules! define_tiny_scalar_type {
     ($tiny:ident) => {
-        define_tiny_type!{$tiny, Scalar, Default, ZeroizeOnDrop}
+        define_tiny_type! {$tiny, Scalar, Default, ZeroizeOnDrop}
         impl AsScalar for $tiny {
             fn as_scalar_ref(&self) -> &Scalar {
                 &self.0
@@ -105,8 +105,8 @@ macro_rules! define_tiny_byte_type {
     };
 }
 
-pub(crate) use define_tiny_type;
+pub(crate) use define_tiny_byte_type;
 pub(crate) use define_tiny_edwards_type;
 pub(crate) use define_tiny_montgomery_type;
 pub(crate) use define_tiny_scalar_type;
-pub(crate) use define_tiny_byte_type;
+pub(crate) use define_tiny_type;

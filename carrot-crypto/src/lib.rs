@@ -1,7 +1,7 @@
 #![no_std]
 
-mod as_crypto;
 pub mod account;
+mod as_crypto;
 mod consts;
 mod destination;
 pub mod device;
