@@ -1,3 +1,6 @@
+// Carrot Blake2b personal string
+pub const PERSONAL_STRING: &str = "Monero";
+
 // Carrot addressing protocol domain separators
 pub const AMOUNT_BLINDING_FACTOR: &str = "Carrot commitment mask";
 pub const ONETIME_EXTENSION_G: &str = "Carrot key extension G";

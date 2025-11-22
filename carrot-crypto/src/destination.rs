@@ -144,11 +144,11 @@ mod test {
         )
         .unwrap();
         assert_eq_hex!(
-            "cb84becce21364e6fc91f6cec459ae917287bc3d87791369f8ff0fc40e4fcc08",
+            "605bc2e5e0d2adcb6480eaf02d8c76be5ef6c3a26b6d13569d000b371a62db99",
             subaddress.address_spend_pubkey
         );
         assert_eq_hex!(
-            "82800b2b97f50a798768d3235eabe9d4b3d5bd6d12956975b79db53f29895bdd",
+            "06384ebd3a99beaaa7f2e1d5744e83b4152a13abcd31fb08295eed4862be4f21",
             subaddress.address_view_pubkey
         );
     }

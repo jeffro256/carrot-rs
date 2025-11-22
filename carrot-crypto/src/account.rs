@@ -146,7 +146,7 @@ mod test {
     #[test]
     fn converge_make_carrot_provespend_key() {
         assert_eq_hex!(
-            "f10bf01839ea216e5d70b7c9ceaa8b8e9a432b5e98e6e48a8043ffb3fa229f0b",
+            "c9651fc906015afeefdb8d3bf7be621c36e035de2a85cb22dd4b869a22086f0e",
             ProveSpendKey::derive(&hex_into!(
                 "6e02e67b303dc713276bb1a4d70b0083b78e4f50e34e209da9f0377cdc3d376e"
             ))
@@ -156,7 +156,7 @@ mod test {
     #[test]
     fn converge_make_carrot_viewbalance_secret() {
         assert_eq_hex!(
-            "154c5e01902b20acc8436c9aa06b40355d78dfda0fc6af3d53a2220f1363a0f5",
+            "59b2ee8646923309384704613418f5982b0167eb3cd87c6c067ee10700c3af91",
             ViewBalanceSecret::derive(&hex_into!(
                 "6e02e67b303dc713276bb1a4d70b0083b78e4f50e34e209da9f0377cdc3d376e"
             ))
@@ -166,7 +166,7 @@ mod test {
     #[test]
     fn converge_make_carrot_generateimage_key() {
         assert_eq_hex!(
-            "336e3af233b3aa5bc95d5589aba67aab727727419899823acc6a6c4479e4ea04",
+            "b9c67add7cc5d660c62ad0541685eb84e6a13fef3f15fdc8fe52a8cdfbe7240f",
             GenerateImageKey::derive(&hex_into!(
                 "154c5e01902b20acc8436c9aa06b40355d78dfda0fc6af3d53a2220f1363a0f5"
             ))
@@ -176,7 +176,7 @@ mod test {
     #[test]
     fn converge_make_carrot_viewincoming_key() {
         assert_eq_hex!(
-            "60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200",
+            "81df86e1c261aa719849e66c954992394f450eab7ff1bb2643663eabcd12af0c",
             ViewIncomingKey::derive(&hex_into!(
                 "154c5e01902b20acc8436c9aa06b40355d78dfda0fc6af3d53a2220f1363a0f5"
             ))
@@ -186,7 +186,7 @@ mod test {
     #[test]
     fn converge_make_carrot_generateaddress_secret() {
         assert_eq_hex!(
-            "593ece76c5d24cbfe3c7ac9e2d455cdd4b372c89584700bf1c2e7bef2b70a4d1",
+            "bb15de08485cbd8115283e65517fff91ccca190bac8a8591f52c49d09a7ae080",
             GenerateAddressSecret::derive(&hex_into!(
                 "154c5e01902b20acc8436c9aa06b40355d78dfda0fc6af3d53a2220f1363a0f5"
             ))
@@ -207,7 +207,7 @@ mod test {
     #[test]
     fn converge_make_carrot_index_extension_generator() {
         assert_eq_hex!(
-            "79ad2383f44b4d26413adb7ae79c5658b2a8c20b6f5046bfa9f229bfcf1744a7",
+            "d2e2e8a75026f0e953e3a46d0ea826f22649bbfc5f04b14a9da14063d6199cc2",
             AddressIndexGeneratorSecret::derive(
                 &hex_into!("593ece76c5d24cbfe3c7ac9e2d455cdd4b372c89584700bf1c2e7bef2b70a4d1"),
                 5,
@@ -219,7 +219,7 @@ mod test {
     #[test]
     fn converge_make_carrot_subaddress_scalar() {
         assert_eq_hex!(
-            "824e9710a9ee164dcf225be9ced906ceb53a0e93326b199a79340f6c0c7e050d",
+            "5ffc416bbd22770789d4a55c9efe0675abad116c3e33cf88bf2b0cbbb8b0ef0d",
             SubaddressScalarSecret::derive(
                 &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f"),
                 &hex_into!("a30c1b720a66557c03a9784c6dd0902c95ee56670e04907d18eaa20608a72e7e"),

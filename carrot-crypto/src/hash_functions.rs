@@ -3,6 +3,8 @@ use curve25519_dalek::Scalar;
 use digest::core_api::{OutputSizeUser, TruncSide, UpdateCore, VariableOutputCore};
 use typenum::Unsigned;
 
+use crate::domain_separators::PERSONAL_STRING;
+
 pub fn hash_base(data: &[u8], key: &[u8], out: &mut [u8]) {
     assert!(key.len() <= 64);
     assert!(out.len() <= <<Blake2bVarCore as OutputSizeUser>::OutputSize as Unsigned>::USIZE);
@@ -12,7 +14,8 @@ pub fn hash_base(data: &[u8], key: &[u8], out: &mut [u8]) {
     };
     assert!(TRUNCS_LEFT);
 
-    let mut hasher = Blake2bVarCore::new_with_params(&[], &[], key.len(), out.len());
+    let mut hasher =
+        Blake2bVarCore::new_with_params(&[], PERSONAL_STRING.as_bytes(), key.len(), out.len());
 
     let mut buffer = digest::core_api::Buffer::<Blake2bVarCore>::default();
     if !key.is_empty() {

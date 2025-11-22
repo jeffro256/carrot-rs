@@ -597,7 +597,7 @@ mod test {
     #[test]
     fn converge_make_carrot_enote_ephemeral_privkey() {
         assert_eq_hex!(
-            "6d4645a0e398ff430f68eaa78240dd2c04051e9a50438cd9c9c3c0e12af68b0b",
+            "ec995ed69fe6b8e0516d8c38bda170ac9b642ae6036237279b5f9be9ed8df10a",
             EnoteEphemeralKey::derive(
                 &hex_into!("caee1381775487a0982557f0d2680b55"),
                 &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
@@ -655,7 +655,7 @@ mod test {
     #[test]
     fn converge_make_carrot_sender_receiver_secret() {
         assert_eq_hex!(
-            "232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c",
+            "f1a6b7d438ade0151c118596f69f104c85bc7a709c2cd8c27a2d03e8220c5ffb",
             SenderReceiverSecret::derive(
                 &hex_into!("baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451"),
                 &hex_into!("d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55"),
@@ -667,7 +667,7 @@ mod test {
     #[test]
     fn converge_make_carrot_amount_blinding_factor_payment() {
         assert_eq_hex!(
-            "9fc3581e926a844877479d829ff9deeae17ce77feaf2c3c972923510e04f1f02",
+            "54d9fd79614b4dfbdb051badfa321e3ca614d8f19a89536ef675e795aba49c0c",
             AmountBlindingKey::derive(
                 &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
                 23000000000000,
@@ -680,7 +680,7 @@ mod test {
     #[test]
     fn converge_make_carrot_amount_blinding_factor_change() {
         assert_eq_hex!(
-            "dda34eac46030e4084f5a2c808d0a82ffaa82cbf01d4a74d7ee0d4fe72c31a0f",
+            "804f4864fb504e0f15eddac046833572bfd86fbeefecf80bb8a71e8e064e5803",
             AmountBlindingKey::derive(
                 &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
                 23000000000000,
@@ -704,7 +704,7 @@ mod test {
     #[test]
     fn converge_make_carrot_onetime_address() {
         assert_eq_hex!(
-            "4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92",
+            "2356ceee53018df042304e4ee470b8cecccc0ee48249f73a19dd3ac67c4735cf",
             OutputPubkey::derive_from_sender_receiver_secret(
                 &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
                 &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
@@ -717,7 +717,7 @@ mod test {
     #[test]
     fn converge_make_carrot_view_tag() {
         assert_eq_hex!(
-            "0176f6",
+            "0c5459",
             ViewTag::derive(
                 &hex_into!("baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451"),
                 &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
@@ -729,7 +729,7 @@ mod test {
     #[test]
     fn converge_make_carrot_anchor_encryption_mask() {
         assert_eq_hex!(
-            "52d95a8e441f26a056f55094938cbfa8",
+            "6a192358e89e2d066009f3f958634026",
             AnchorEncryptionMask::derive(
                 &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
                 &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
@@ -740,7 +740,7 @@ mod test {
     #[test]
     fn converge_make_carrot_amount_encryption_mask() {
         assert_eq_hex!(
-            "98d25d1db65b6a3e",
+            "a2b98771cdb147dc",
             AmountEncryptionMask::derive(
                 &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
                 &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
@@ -751,7 +751,7 @@ mod test {
     #[test]
     fn converge_make_carrot_payment_id_encryption_mask() {
         assert_eq_hex!(
-            "b57a1560e82e2483",
+            "63f53dd38efd666d",
             PaymentIdEncryptionMask::derive(
                 &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
                 &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
@@ -762,7 +762,7 @@ mod test {
     #[test]
     fn converge_make_carrot_janus_anchor_special() {
         assert_eq_hex!(
-            "31afa8f580feaf736cd424ecc9ae5fd2",
+            "441aab244c6f0fb9c2a79f9f52c9e921",
             JanusAnchor::derive_special(
                 &hex_into!("d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55"),
                 &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
