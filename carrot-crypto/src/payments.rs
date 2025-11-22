@@ -47,16 +47,26 @@ pub struct RCTOutputEnoteProposal {
     pub amount_blinding_factor: AmountBlindingKey,
 }
 
+/// Type of error encountered finalizing payments
 #[derive(Debug)]
 pub enum ErrorKind {
+    /// Address contains invalid/torsioned elliptic curve points
     BadAddressPoints,
+    /// Device threw an error
     DeviceError,
+    /// Internal message is invalid for given type of payment
     InvalidInternalMessage,
+    /// Conflicting enote ephemeral pubkeys provided for a self-send payment
     MismatchedEnoteEphemeralPubkey,
+    /// No enote ephemeral pubkey was provided for a self-send payment
     MissingEnoteEphemeralPubkey,
+    /// Missing dummy payment encrypted ID when no integrated address destination was provided
     MissingPaymentId,
+    /// Missing randomness/anchor_norm for normal payment
     MissingRandomness,
+    /// Address type cannot be used in these payment set
     WrongAddressType,
+    /// Bad number of outputs in a set (too low)
     WrongOutputNumber,
 }
 

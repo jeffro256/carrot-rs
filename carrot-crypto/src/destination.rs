@@ -6,15 +6,21 @@ use crate::*;
 
 define_tiny_byte_type! {PaymentId, "Short payment ID in an integrated address", PAYMENT_ID_BYTES}
 
+/// Destination address
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CarrotDestinationV1 {
+    /// Address spend pubkey $K^j_s$
     pub address_spend_pubkey: AddressSpendPubkey,
+    /// Address view pubkey $K^j_v$
     pub address_view_pubkey: AddressViewPubkey,
+    /// True iff destination is a subaddress, i.e. not a primary/main address
     pub is_subaddress: bool,
+    /// Payment ID $pid$
     pub payment_id: PaymentId,
 }
 
 impl CarrotDestinationV1 {
+    /// Construct a primary/main address, Carrot-derived account or otherwise
     pub fn make_main_address(
         account_spend_pubkey: AddressSpendPubkey,
         primary_address_view_pubkey: AddressViewPubkey,
@@ -27,6 +33,7 @@ impl CarrotDestinationV1 {
         }
     }
 
+    /// Construct a Carrot-derived account subaddress
     pub fn make_subaddress<G: GenerateAddressSecretDevice>(
         account_spend_pubkey: &AddressSpendPubkey,
         account_view_pubkey: &AddressViewPubkey,
@@ -72,6 +79,7 @@ impl CarrotDestinationV1 {
         })
     }
 
+    /// Construct an integrated address, Carrot-derived account or otherwise
     pub fn make_integrated_address(
         account_spend_pubkey: AddressSpendPubkey,
         primary_address_view_pubkey: AddressViewPubkey,
@@ -85,6 +93,7 @@ impl CarrotDestinationV1 {
         }
     }
 
+    /// Returns whether address is an integrated address
     pub fn is_integrated(&self) -> bool {
         return self.payment_id != Default::default();
     }

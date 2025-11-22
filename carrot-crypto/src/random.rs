@@ -6,8 +6,9 @@ pub trait Random {
     ) -> Self;
 }
 
-pub fn new_random<T>(rng: &mut (impl rand_core::CryptoRngCore + ?Sized)) -> T
+pub fn new_random<R, T>(rng: &mut R) -> T
 where
+    R: rand_core::CryptoRngCore + ?Sized,
     T: Random<Params = ()>,
 {
     T::new_random_with_params(rng, ())

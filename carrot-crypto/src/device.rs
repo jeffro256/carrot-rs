@@ -3,12 +3,16 @@ use curve25519_dalek::EdwardsPoint;
 
 use crate::*;
 
+/// Type of error encountered interacting with devices
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
+    /// Device not connected
     NotConnected,
+    /// Password needed on-device
     PasswordNeeded,
 }
 
+/// Error generated from a device
 #[derive(Debug)]
 pub struct Error {
     kind: ErrorKind,
@@ -21,8 +25,10 @@ impl Display for Error {
     }
 }
 
+/// Result returned from device-based operation
 pub type Result<T> = core::result::Result<T, Error>;
 
+/// Device interface representing a view-incoming key
 pub trait ViewIncomingKeyDevice {
     /**
      * brief: do an Ed25519 scalar mult against the incoming view key
@@ -52,6 +58,7 @@ pub trait ViewIncomingKeyDevice {
     ) -> Result<JanusAnchor>;
 }
 
+/// Device interface representing a view-balance secret
 pub trait ViewBalanceSecretDevice {
     /**
      * brief: make an internal view tag, given non-secret data
@@ -74,6 +81,7 @@ pub trait ViewBalanceSecretDevice {
     ) -> Result<SenderReceiverSecret>;
 }
 
+/// Device interface representing a generate-address secret
 pub trait GenerateAddressSecretDevice {
     /**
      * brief: make_index_extension_generator - make carrot index extension generator s^j_gen
@@ -86,6 +94,7 @@ pub trait GenerateAddressSecretDevice {
     ) -> Result<AddressIndexGeneratorSecret>;
 }
 
+/// Device interface representing a generate-image key
 pub trait GenerateImageKeyDevice {
     /**
      * brief: multiply associated secret key against hash-to-point of one-time address

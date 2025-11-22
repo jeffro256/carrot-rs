@@ -20,6 +20,7 @@ define_tiny_edwards_type! {AddressSpendPubkey, "Spend pubkey in an address or ac
 define_tiny_edwards_type! {AddressViewPubkey, "View pubkey in an address or account, Carrot-derived or otherwise"}
 
 impl ProveSpendKey {
+    /// Derive Carrot key hierarchy prove-spend key from the master secret
     pub fn derive(s_master: &MasterSecret) -> Self {
         // k_ps = H_n(s_m)
         let transcript = make_carrot_transcript!(domain_separators::PROVE_SPEND_KEY,);
@@ -28,6 +29,7 @@ impl ProveSpendKey {
 }
 
 impl ViewBalanceSecret {
+    /// Derive Carrot key hierarchy view-balance secret from the master secret
     pub fn derive(s_master: &MasterSecret) -> Self {
         // s_vb = H_32(s_m)
         let transcript = make_carrot_transcript!(domain_separators::VIEW_BALANCE_SECRET,);
@@ -36,6 +38,7 @@ impl ViewBalanceSecret {
 }
 
 impl GenerateImageKey {
+    /// Derive Carrot key hierarchy generate-image key from the view-balance secret
     pub fn derive(s_view_balance: &ViewBalanceSecret) -> Self {
         // k_gi = H_n(s_vb)
         let transcript = make_carrot_transcript!(domain_separators::GENERATE_IMAGE_KEY,);
@@ -44,6 +47,7 @@ impl GenerateImageKey {
 }
 
 impl ViewIncomingKey {
+    /// Derive Carrot key hierarchy view-incoming key from the view-balance secret
     pub fn derive(s_view_balance: &ViewBalanceSecret) -> Self {
         // k_v = H_n(s_vb)
         let transcript = make_carrot_transcript!(domain_separators::INCOMING_VIEW_KEY,);
@@ -52,6 +56,7 @@ impl ViewIncomingKey {
 }
 
 impl GenerateAddressSecret {
+    /// Derive Carrot key generate-address secret from the view-balance secret
     pub fn derive(s_view_balance: &ViewBalanceSecret) -> Self {
         // s_ga = H_32(s_vb)
         let transcript = make_carrot_transcript!(domain_separators::GENERATE_ADDRESS_SECRET,);
@@ -60,6 +65,7 @@ impl GenerateAddressSecret {
 }
 
 impl AddressSpendPubkey {
+    /// Derive Carrot key hierarchy account spend pubkey key from private keys
     pub fn derive_carrot_account_spend_pubkey(
         k_generate_image: &GenerateImageKey,
         k_prove_spend: &ProveSpendKey,
@@ -68,6 +74,7 @@ impl AddressSpendPubkey {
         Self(scalar_mul_gt(k_generate_image, k_prove_spend))
     }
 
+    /// Derive Carrot key hierarchy subaddress spend pubkey from its subaddress scalar
     pub fn derive_subaddress_spend_pubkey(
         subaddr_scalar: &SubaddressScalarSecret,
         account_spend_pubkey: &AddressSpendPubkey,
@@ -81,6 +88,7 @@ impl AddressSpendPubkey {
 }
 
 impl AddressViewPubkey {
+    /// Derive Carrot key hierarchy account view pubkey from the spend pubkey
     pub fn derive_carrot_account_view_pubkey(
         k_view: &ViewIncomingKey,
         spend_pubkey: &AddressSpendPubkey,
@@ -89,11 +97,13 @@ impl AddressViewPubkey {
         Some(Self(scalar_mul_key(k_view, spend_pubkey)?))
     }
 
+    /// Derive the primary address view pubkey (same for Carrot and legacy) from the view-incoming key
     pub fn derive_primary_address_view_pubkey(k_view: &ViewIncomingKey) -> Self {
         // K^0_v = k_v G
         Self(scalar_mul_base(k_view))
     }
 
+    /// Derive Carrot key hierarchy subaddress view pubkey from its subaddress scalar
     pub fn derive_subaddress_view_pubkey(
         subaddr_scalar: &SubaddressScalarSecret,
         account_view_pubkey: &AddressViewPubkey,
@@ -112,6 +122,7 @@ impl AddressIndexGeneratorSecret {
 }
 
 impl SubaddressScalarSecret {
+    /// Derive subaddress scalar secret from account secrets and its index value
     pub fn derive(
         account_spend_pubkey: &AddressSpendPubkey,
         account_view_pubkey: &AddressViewPubkey,
