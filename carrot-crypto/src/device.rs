@@ -84,14 +84,14 @@ pub trait ViewBalanceSecretDevice {
 /// Device interface representing a generate-address secret
 pub trait GenerateAddressSecretDevice {
     /**
-     * brief: make_index_extension_generator - make carrot index extension generator s^j_gen
-     *   s^j_gen = H_32[s_ga](j_major, j_minor)
+     * brief: make carrot address index preimage 1 s^j_ap1
+     *   s^j_ap1 = H_32[s_ga](j_major, j_minor)
      */
-    fn make_index_extension_generator(
+    fn make_address_index_preimage_1(
         &self,
         major_index: u32,
         minor_index: u32,
-    ) -> Result<AddressIndexGeneratorSecret>;
+    ) -> Result<AddressIndexPreimage1>;
 }
 
 /// Device interface representing a generate-image key

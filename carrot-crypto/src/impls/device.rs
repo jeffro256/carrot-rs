@@ -58,12 +58,12 @@ impl ViewBalanceSecretDevice for ViewBalanceSecret {
 }
 
 impl GenerateAddressSecretDevice for GenerateAddressSecret {
-    fn make_index_extension_generator(
+    fn make_address_index_preimage_1(
         &self,
         major_index: u32,
         minor_index: u32,
-    ) -> Result<AddressIndexGeneratorSecret> {
-        Ok(AddressIndexGeneratorSecret::derive(
+    ) -> Result<AddressIndexPreimage1> {
+        Ok(AddressIndexPreimage1::derive(
             self,
             major_index,
             minor_index,

@@ -45,18 +45,24 @@ impl CarrotDestinationV1 {
             return None;
         }
 
-        // s^j_gen = H_32[s_ga](j_major, j_minor)
-        let address_index_generator = s_generate_address_dev
-            .make_index_extension_generator(major_index, minor_index)
+        // s^j_ap1 = H_32[s_ga](j_major, j_minor)
+        let s_address_index_preimage_1 = s_generate_address_dev
+            .make_address_index_preimage_1(major_index, minor_index)
             .ok()?;
 
-        // k^j_subscal = H_n[s^j_gen](K_s, K_v, j_major, j_minor)
-        let subaddress_scalar = SubaddressScalarSecret::derive(
-            account_spend_pubkey,
-            account_view_pubkey,
-            &address_index_generator,
+        // s^j_ap2 = H_32[s^j_ap1](j_major, j_minor, K_s, K_v)
+        let s_address_index_preimage_2 = AddressIndexPreimage2::derive(
+            &s_address_index_preimage_1,
             major_index,
             minor_index,
+            account_spend_pubkey,
+            account_view_pubkey
+        );
+
+        // k^j_subscal = H_n[s^j_ap1](K_s)
+        let subaddress_scalar = SubaddressScalarSecret::derive(
+            &s_address_index_preimage_2,
+            account_spend_pubkey
         );
 
         // K^j_s = k^j_subscal * K_s
@@ -129,13 +135,13 @@ mod test {
     #[test]
     fn converge_make_subaddress() {
         let s_generate_address: GenerateAddressSecret =
-            hex_into!("593ece76c5d24cbfe3c7ac9e2d455cdd4b372c89584700bf1c2e7bef2b70a4d1");
+            hex_into!("039f0744fb138954072ee6bcbda4b5c085fd05e09b476a7b34ad20bf9ad440bc");
 
         let subaddress = CarrotDestinationV1::make_subaddress(
-            &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f"),
+            &hex_into!("4198f391723f6c64eb75e4f0e341d576dc344e8a8ad3164444451855dbd862b4"),
             &AddressViewPubkey::derive_carrot_account_view_pubkey(
-                &hex_into!("60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200"),
-                &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f"),
+                &hex_into!("12624c702b4c1a22fd710a836894ed0705955502e6498e5c6e3ad6f5920bb00f"),
+                &hex_into!("4198f391723f6c64eb75e4f0e341d576dc344e8a8ad3164444451855dbd862b4"),
             )
             .unwrap(),
             &s_generate_address,
@@ -144,11 +150,11 @@ mod test {
         )
         .unwrap();
         assert_eq_hex!(
-            "605bc2e5e0d2adcb6480eaf02d8c76be5ef6c3a26b6d13569d000b371a62db99",
+            "8f2f38e702678ae59751dc55818240e0330851e77bfaff003b671885ed06871e",
             subaddress.address_spend_pubkey
         );
         assert_eq_hex!(
-            "06384ebd3a99beaaa7f2e1d5744e83b4152a13abcd31fb08295eed4862be4f21",
+            "369bdcf4f434f42eb09f4372cb6be30de7b17d21e4f98e244459a90b58cd0610",
             subaddress.address_view_pubkey
         );
     }

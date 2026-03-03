@@ -195,11 +195,22 @@ impl AmountCommitment {
 }
 
 impl OnetimeExtensionG {
-    pub fn derive(
+    pub fn derive_coinbase(
+        s_sender_receiver: &SenderReceiverSecret,
+        amount: Amount,
+        main_address_spend_pubkey: &AddressSpendPubkey
+    ) -> Self {
+        // k^g_o = H_n[s^ctx_sr]("..coinbase..G..", a, K^0_s)
+        let transcript = make_carrot_transcript!(domain_separators::ONETIME_EXTENSION_G_COINBASE,
+            Amount : &amount, AddressSpendPubkey: main_address_spend_pubkey);
+        Self(derive_scalar(&transcript, s_sender_receiver.as_bytes()))
+    }
+
+    pub fn derive_ringct(
         s_sender_receiver: &SenderReceiverSecret,
         amount_commitment: &AmountCommitment,
     ) -> Self {
-        // k^o_g = H_n("..g..", s^ctx_sr, C_a)
+        // k^g_o = H_n[s^ctx_sr]("..G..", C_a)
         let transcript = make_carrot_transcript!(domain_separators::ONETIME_EXTENSION_G,
             AmountCommitment : amount_commitment);
         Self(derive_scalar(&transcript, s_sender_receiver.as_bytes()))
@@ -207,11 +218,22 @@ impl OnetimeExtensionG {
 }
 
 impl OnetimeExtensionT {
-    pub fn derive(
+    pub fn derive_coinbase(
+        s_sender_receiver: &SenderReceiverSecret,
+        amount: Amount,
+        main_address_spend_pubkey: &AddressSpendPubkey
+    ) -> Self {
+        // k^t_o = H_n[s^ctx_sr]("..coinbase..T..", a, K^0_s)
+        let transcript = make_carrot_transcript!(domain_separators::ONETIME_EXTENSION_T_COINBASE,
+            Amount : &amount, AddressSpendPubkey : main_address_spend_pubkey);
+        Self(derive_scalar(&transcript, s_sender_receiver.as_bytes()))
+    }
+
+    pub fn derive_ringct(
         s_sender_receiver: &SenderReceiverSecret,
         amount_commitment: &AmountCommitment,
     ) -> Self {
-        // k^o_t = H_n("..t..", s^ctx_sr, C_a)
+        // k^t_o = H_n[s^ctx_sr]("..T..", C_a)
         let transcript = make_carrot_transcript!(domain_separators::ONETIME_EXTENSION_T,
             AmountCommitment : amount_commitment);
         Self(derive_scalar(&transcript, s_sender_receiver.as_bytes()))
@@ -219,76 +241,74 @@ impl OnetimeExtensionT {
 }
 
 impl OnetimeExtension {
-    pub fn derive_from_extension_scalars(
+    pub fn derive_from_scalars(
         onetime_ext_g: &OnetimeExtensionG,
         onetime_ext_t: &OnetimeExtensionT,
     ) -> Self {
-        // K^o_ext = k^o_g G + k^o_t T
+        // K^o_ext = k^g_o G + k^t_o T
         Self(scalar_mul_gt(onetime_ext_g, onetime_ext_t))
     }
 
-    pub fn derive_from_sender_receiver_secret(
+    pub fn derive_coinbase(
+        s_sender_receiver: &SenderReceiverSecret,
+        amount: Amount,
+        main_address_spend_pubkey: &AddressSpendPubkey
+    ) -> Self {
+        // k^g_o = H_n[s^ctx_sr]("..coinbase..G..", a, K^0_s)
+        let onetime_ext_g = OnetimeExtensionG::derive_coinbase(
+            s_sender_receiver,
+            amount,
+            main_address_spend_pubkey
+        );
+
+        // k^t_o = H_n[s^ctx_sr]("..coinbase..T..", a, K^0_s)
+        let onetime_ext_t = OnetimeExtensionT::derive_coinbase(
+            s_sender_receiver,
+            amount,
+            main_address_spend_pubkey
+        );
+
+        // K^o_ext = k^g_o G + k^t_o T
+        Self::derive_from_scalars(&onetime_ext_g, &onetime_ext_t)
+    }
+
+    pub fn derive_ringct(
         s_sender_receiver: &SenderReceiverSecret,
         amount_commitment: &AmountCommitment,
     ) -> Self {
-        // k^o_g = H_n("..g..", s^ctx_sr, C_a)
-        let onetime_ext_g = OnetimeExtensionG::derive(s_sender_receiver, amount_commitment);
+        // k^g_o = H_n[s^ctx_sr]("..G..", C_a)
+        let onetime_ext_g = OnetimeExtensionG::derive_ringct(s_sender_receiver, amount_commitment);
 
-        // k^o_t = H_n("..t..", s^ctx_sr, C_a)
-        let onetime_ext_t = OnetimeExtensionT::derive(s_sender_receiver, amount_commitment);
+        // k^t_o = H_n[s^ctx_sr]("..T..", C_a)
+        let onetime_ext_t = OnetimeExtensionT::derive_ringct(s_sender_receiver, amount_commitment);
 
-        // K^o_ext = k^o_g G + k^o_t T
-        Self::derive_from_extension_scalars(&onetime_ext_g, &onetime_ext_t)
+        // K^o_ext = k^g_o G + k^t_o T
+        Self::derive_from_scalars(&onetime_ext_g, &onetime_ext_t)
     }
 }
 
 impl OutputPubkey {
     pub fn derive_from_extension(
         address_spend_pubkey: &AddressSpendPubkey,
-        sender_extension_pubkey: OnetimeExtension,
+        sender_extension_pubkey: &OnetimeExtension,
     ) -> Option<Self> {
         // Ko = K^j_s + K^o_ext
         Some(Self(add_edwards(
             address_spend_pubkey,
-            &sender_extension_pubkey,
-        )?))
-    }
-
-    pub fn derive_from_sender_receiver_secret(
-        address_spend_pubkey: &AddressSpendPubkey,
-        s_sender_receiver: &SenderReceiverSecret,
-        amount_commitment: &AmountCommitment,
-    ) -> Option<Self> {
-        // K^o_ext = k^o_g G + k^o_t T
-        let sender_extension_pubkey = OnetimeExtension::derive_from_sender_receiver_secret(
-            s_sender_receiver,
-            amount_commitment,
-        );
-
-        // Ko = K^j_s + K^o_ext
-        Some(Self(add_edwards(
-            address_spend_pubkey,
-            &sender_extension_pubkey,
+            sender_extension_pubkey,
         )?))
     }
 }
 
 impl AddressSpendPubkey {
-    pub fn recover_from_onetime_address(
+    pub fn recover_from_extension(
         onetime_address: &OutputPubkey,
-        s_sender_receiver: &SenderReceiverSecret,
-        amount_commitment: &AmountCommitment,
+        sender_extension_pubkey: &OnetimeExtension
     ) -> Option<Self> {
-        // K^o_ext = k^o_g G + k^o_t T
-        let sender_extension_pubkey = OnetimeExtension::derive_from_sender_receiver_secret(
-            s_sender_receiver,
-            amount_commitment,
-        );
-
         // K^j_s = Ko - K^o_ext
         Some(Self::from_inner(sub_edwards(
             onetime_address,
-            &sender_extension_pubkey,
+            sender_extension_pubkey,
         )?))
     }
 }
@@ -597,11 +617,11 @@ mod test {
     #[test]
     fn converge_make_carrot_enote_ephemeral_privkey() {
         assert_eq_hex!(
-            "ec995ed69fe6b8e0516d8c38bda170ac9b642ae6036237279b5f9be9ed8df10a",
+            "6aea0ed0c34ad3483415377658841a75e0da8b462e637d8bf783b9bcd320b303",
             EnoteEphemeralKey::derive(
                 &hex_into!("caee1381775487a0982557f0d2680b55"),
                 &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
-                &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
+                &hex_into!("8f2f38e702678ae59751dc55818240e0330851e77bfaff003b671885ed06871e"),
                 &hex_into!("4321734f56621440")
             )
         );
@@ -610,9 +630,9 @@ mod test {
     #[test]
     fn converge_make_carrot_enote_ephemeral_pubkey_cryptonote() {
         assert_eq_hex!(
-            "2987777565c02409dfe871cc27b2334f5ade9d4ad014012c568367b80e99c666",
+            "8df2a40a42ecc10348a461310c1afc2c2b1be7b29fd27a3921a1aefba5efa27b",
             EnoteEphemeralPubkey::derive_to_cryptonote_address(&hex_into!(
-                "f57ff2d7c898b755137b69e8d826801945ed72e9951850de908e9d645a0bb00d"
+                "6aea0ed0c34ad3483415377658841a75e0da8b462e637d8bf783b9bcd320b303"
             ))
         );
     }
@@ -620,10 +640,10 @@ mod test {
     #[test]
     fn converge_make_carrot_enote_ephemeral_pubkey_subaddress() {
         assert_eq_hex!(
-            "d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55",
+            "a3c3cdf84fd301cfc4675096f1c896543f2efc1001d899bbab3a0fd137f6a630",
             EnoteEphemeralPubkey::derive_to_subaddress(
-                &hex_into!("f57ff2d7c898b755137b69e8d826801945ed72e9951850de908e9d645a0bb00d"),
-                &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0")
+                &hex_into!("6aea0ed0c34ad3483415377658841a75e0da8b462e637d8bf783b9bcd320b303"),
+                &hex_into!("8f2f38e702678ae59751dc55818240e0330851e77bfaff003b671885ed06871e")
             )
             .unwrap()
         );
@@ -632,10 +652,10 @@ mod test {
     #[test]
     fn converge_make_carrot_uncontextualized_shared_key_receiver() {
         assert_eq_hex!(
-            "baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451",
+            "1f848f8384e7a9f217dc9dc2691703cf392eaf6c92931acd0fc840c900d3ed49",
             MontgomeryECDH::derive_as_receiver(
-                &hex_into!("60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200"),
-                &hex_into!("d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55")
+                &hex_into!("12624c702b4c1a22fd710a836894ed0705955502e6498e5c6e3ad6f5920bb00f"),
+                &hex_into!("a3c3cdf84fd301cfc4675096f1c896543f2efc1001d899bbab3a0fd137f6a630")
             )
         );
     }
@@ -643,10 +663,10 @@ mod test {
     #[test]
     fn converge_make_carrot_uncontextualized_shared_key_sender() {
         assert_eq_hex!(
-            "baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451",
+            "1f848f8384e7a9f217dc9dc2691703cf392eaf6c92931acd0fc840c900d3ed49",
             MontgomeryECDH::derive_as_sender(
-                &hex_into!("f57ff2d7c898b755137b69e8d826801945ed72e9951850de908e9d645a0bb00d"),
-                &hex_into!("75b7bc7759da5d9ad5ff421650949b27a13ea369685eb4d1bd59abc518e25fe2")
+                &hex_into!("6aea0ed0c34ad3483415377658841a75e0da8b462e637d8bf783b9bcd320b303"),
+                &hex_into!("369bdcf4f434f42eb09f4372cb6be30de7b17d21e4f98e244459a90b58cd0610")
             )
             .unwrap()
         );
@@ -655,10 +675,10 @@ mod test {
     #[test]
     fn converge_make_carrot_sender_receiver_secret() {
         assert_eq_hex!(
-            "f1a6b7d438ade0151c118596f69f104c85bc7a709c2cd8c27a2d03e8220c5ffb",
+            "6e99852ed7b3744177bb669e73fd1c544d88555ea6fffe3787ca6af48d2fe9f6",
             SenderReceiverSecret::derive(
-                &hex_into!("baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451"),
-                &hex_into!("d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55"),
+                &hex_into!("1f848f8384e7a9f217dc9dc2691703cf392eaf6c92931acd0fc840c900d3ed49"),
+                &hex_into!("a3c3cdf84fd301cfc4675096f1c896543f2efc1001d899bbab3a0fd137f6a630"),
                 &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7")
             )
         );
@@ -667,11 +687,11 @@ mod test {
     #[test]
     fn converge_make_carrot_amount_blinding_factor_payment() {
         assert_eq_hex!(
-            "54d9fd79614b4dfbdb051badfa321e3ca614d8f19a89536ef675e795aba49c0c",
+            "5a01cc9f8ca9556c429d623d848fe036c76593005c63a62df57afc4b51d3c20b",
             AmountBlindingKey::derive(
-                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
-                23000000000000,
-                &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
+                &hex_into!("6e99852ed7b3744177bb669e73fd1c544d88555ea6fffe3787ca6af48d2fe9f6"),
+                67000000000000,
+                &hex_into!("8f2f38e702678ae59751dc55818240e0330851e77bfaff003b671885ed06871e"),
                 CarrotEnoteType::Payment
             )
         );
@@ -680,11 +700,11 @@ mod test {
     #[test]
     fn converge_make_carrot_amount_blinding_factor_change() {
         assert_eq_hex!(
-            "804f4864fb504e0f15eddac046833572bfd86fbeefecf80bb8a71e8e064e5803",
+            "f69587a2e01d039758b5dd61999e4d60f226eb7b8027be2ff2656ecbb584d103",
             AmountBlindingKey::derive(
-                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
-                23000000000000,
-                &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
+                &hex_into!("6e99852ed7b3744177bb669e73fd1c544d88555ea6fffe3787ca6af48d2fe9f6"),
+                67000000000000,
+                &hex_into!("8f2f38e702678ae59751dc55818240e0330851e77bfaff003b671885ed06871e"),
                 CarrotEnoteType::Change
             )
         );
@@ -693,22 +713,40 @@ mod test {
     #[test]
     fn converge_make_carrot_amount_commitment() {
         assert_eq_hex!(
-            "ca5f0fc2fe7a4fe628e6f08b2c0eb44f3af3b87e1619b2ed2de296f7e425512b",
+            "f5df40aeba877e8ccadd9dff363d90ec28efbfd1201573897cd70c61c026edb9",
             AmountCommitment::commit(
-                23000000000000,
-                &hex_into!("9fc3581e926a844877479d829ff9deeae17ce77feaf2c3c972923510e04f1f02"),
+                67000000000000,
+                &hex_into!("5a01cc9f8ca9556c429d623d848fe036c76593005c63a62df57afc4b51d3c20b"),
             )
+        );
+    }
+
+    #[test]
+    fn converge_make_carrot_onetime_address_coinbase() {
+        assert_eq_hex!(
+            "0c4ee83d079ebd77882f894b2e0a43e3d572af9c330871f1dfbcc62f5c64e4ae",
+            OutputPubkey::derive_from_extension(
+                &hex_into!("8f2f38e702678ae59751dc55818240e0330851e77bfaff003b671885ed06871e"),
+                &OnetimeExtension::derive_coinbase(
+                    &hex_into!("6e99852ed7b3744177bb669e73fd1c544d88555ea6fffe3787ca6af48d2fe9f6"),
+                    67000000000000,
+                    &hex_into!("8f2f38e702678ae59751dc55818240e0330851e77bfaff003b671885ed06871e")
+                )
+            )
+            .unwrap()
         );
     }
 
     #[test]
     fn converge_make_carrot_onetime_address() {
         assert_eq_hex!(
-            "2356ceee53018df042304e4ee470b8cecccc0ee48249f73a19dd3ac67c4735cf",
-            OutputPubkey::derive_from_sender_receiver_secret(
-                &hex_into!("1ebcddd5d98e26788ed8d8510de7f520e973902238e107a070aad104e166b6a0"),
-                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
-                &hex_into!("ca5f0fc2fe7a4fe628e6f08b2c0eb44f3af3b87e1619b2ed2de296f7e425512b")
+            "522347147e41f22ebe155abc32b9def985b2e454045c6edd8921ee4253cd4516",
+            OutputPubkey::derive_from_extension(
+                &hex_into!("8f2f38e702678ae59751dc55818240e0330851e77bfaff003b671885ed06871e"),
+                &OnetimeExtension::derive_ringct(
+                    &hex_into!("6e99852ed7b3744177bb669e73fd1c544d88555ea6fffe3787ca6af48d2fe9f6"),
+                    &hex_into!("f5df40aeba877e8ccadd9dff363d90ec28efbfd1201573897cd70c61c026edb9")
+                )
             )
             .unwrap()
         );
@@ -717,11 +755,11 @@ mod test {
     #[test]
     fn converge_make_carrot_view_tag() {
         assert_eq_hex!(
-            "0c5459",
+            "5f58e1",
             ViewTag::derive(
-                &hex_into!("baa47cfc380374b15cb5a3048099968962a66e287d78654c75b550d711e58451"),
+                &hex_into!("1f848f8384e7a9f217dc9dc2691703cf392eaf6c92931acd0fc840c900d3ed49"),
                 &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
-                &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
+                &hex_into!("522347147e41f22ebe155abc32b9def985b2e454045c6edd8921ee4253cd4516")
             )
         );
     }
@@ -729,10 +767,10 @@ mod test {
     #[test]
     fn converge_make_carrot_anchor_encryption_mask() {
         assert_eq_hex!(
-            "6a192358e89e2d066009f3f958634026",
+            "6ba7e188fb315ad2158ac6b6652408d4",
             AnchorEncryptionMask::derive(
-                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
-                &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
+                &hex_into!("6e99852ed7b3744177bb669e73fd1c544d88555ea6fffe3787ca6af48d2fe9f6"),
+                &hex_into!("522347147e41f22ebe155abc32b9def985b2e454045c6edd8921ee4253cd4516")
             )
         );
     }
@@ -740,10 +778,10 @@ mod test {
     #[test]
     fn converge_make_carrot_amount_encryption_mask() {
         assert_eq_hex!(
-            "a2b98771cdb147dc",
+            "2b739fdb6d1d5e50",
             AmountEncryptionMask::derive(
-                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
-                &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
+                &hex_into!("6e99852ed7b3744177bb669e73fd1c544d88555ea6fffe3787ca6af48d2fe9f6"),
+                &hex_into!("522347147e41f22ebe155abc32b9def985b2e454045c6edd8921ee4253cd4516")
             )
         );
     }
@@ -751,10 +789,10 @@ mod test {
     #[test]
     fn converge_make_carrot_payment_id_encryption_mask() {
         assert_eq_hex!(
-            "63f53dd38efd666d",
+            "043d7e9ed13a3484",
             PaymentIdEncryptionMask::derive(
-                &hex_into!("232e62041ee1262cb3fce0d10fdbd018cca5b941ff92283676d6112aa426f76c"),
-                &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92")
+                &hex_into!("6e99852ed7b3744177bb669e73fd1c544d88555ea6fffe3787ca6af48d2fe9f6"),
+                &hex_into!("522347147e41f22ebe155abc32b9def985b2e454045c6edd8921ee4253cd4516")
             )
         );
     }
@@ -762,12 +800,12 @@ mod test {
     #[test]
     fn converge_make_carrot_janus_anchor_special() {
         assert_eq_hex!(
-            "441aab244c6f0fb9c2a79f9f52c9e921",
+            "70fe9b941fe1ef3b2345c87485f70a6e",
             JanusAnchor::derive_special(
-                &hex_into!("d8b8ce01943edd05d7db66aeb15109c58ec270796f0c76c03d58a398926aca55"),
+                &hex_into!("8df2a40a42ecc10348a461310c1afc2c2b1be7b29fd27a3921a1aefba5efa27b"),
                 &hex_into!("9423f74f3e869dc8427d8b35bb24c917480409c3f4750bff3c742f8e4d5af7bef7"),
-                &hex_into!("4c93cf2d7ff8556eac73025ab3019a0db220b56bdf0387e0524724cc0e409d92"),
-                &hex_into!("60eff3ec120a12bb44d4258816e015952fc5651040da8c8af58c17676485f200")
+                &hex_into!("522347147e41f22ebe155abc32b9def985b2e454045c6edd8921ee4253cd4516"),
+                &hex_into!("12624c702b4c1a22fd710a836894ed0705955502e6498e5c6e3ad6f5920bb00f")
             )
         );
     }

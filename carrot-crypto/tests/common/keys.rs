@@ -121,21 +121,25 @@ impl MockKeys {
         let (address_privkey_g, address_privkey_t) =
             match self.resolve_derive_type(subaddr_index.derive_type) {
                 AddressDeriveType::Carrot => {
-                    // s^j_gen = H_32[s_ga](j_major, j_minor)
-                    let address_index_generator = AddressIndexGeneratorSecret::derive(
-                        &self.s_generate_address,
+                    // s^j_ap1 = H_32[s_ga](j_major, j_minor)
+                    let s_address_index_preimage_1 = AddressIndexPreimage1::derive(
+                        &self.s_generate_address, major_index, minor_index
+                    );
+
+                    // s^j_ap2 = H_32[s^j_ap1](j_major, j_minor, K_s, K_v)
+                    let s_address_index_preimage_2 = AddressIndexPreimage2::derive(
+                        &s_address_index_preimage_1,
                         major_index,
                         minor_index,
+                        &self.carrot_account_spend_pubkey,
+                        &self.carrot_account_view_pubkey,
                     );
 
                     let subaddress_scalar = if is_subaddress {
                         // k^j_subscal = H_n[s^j_gen](K_s, K_v, j_major, j_minor)
                         SubaddressScalarSecret::derive(
-                            &self.carrot_account_spend_pubkey,
-                            &self.carrot_account_view_pubkey,
-                            &address_index_generator,
-                            major_index,
-                            minor_index,
+                            &s_address_index_preimage_2,
+                            &self.carrot_account_spend_pubkey
                         )
                     } else {
                         // k^j_subscal = 1
@@ -225,9 +229,9 @@ impl MockKeys {
         // first test that K^j_s + k^g_o G + k^t_o T ?= K_o
         // otherwise, there's a problem with the scan funcs
         let sender_extension_pubkey =
-            OnetimeExtension::derive_from_extension_scalars(sender_extension_g, sender_extension_t);
+            OnetimeExtension::derive_from_scalars(sender_extension_g, sender_extension_t);
         let recomputed_onetime_address =
-            OutputPubkey::derive_from_extension(address_spend_pubkey, sender_extension_pubkey)
+            OutputPubkey::derive_from_extension(address_spend_pubkey, &sender_extension_pubkey)
                 .expect("OutputPubkey::derive_from_extension");
         assert_eq!(&recomputed_onetime_address, onetime_address);
 
@@ -323,8 +327,10 @@ impl MockKeys {
 
         // derive carrot privkeys
         let k_prove_spend = ProveSpendKey::derive(&s_master);
+        let partial_account_spend_pubkey = PartialAccountSpendPubkey::derive(&k_prove_spend);
         let s_view_balance = ViewBalanceSecret::derive(&s_master);
-        let k_generate_image = GenerateImageKey::derive(&s_view_balance);
+        let s_generate_image_preimage = GenerateImagePreimage::derive(&s_view_balance);
+        let k_generate_image = GenerateImageKey::derive(&s_generate_image_preimage, &partial_account_spend_pubkey);
         let s_generate_address = GenerateAddressSecret::derive(&s_view_balance);
 
         // derive view-incoming {pub/priv}key, dependent on address derive type

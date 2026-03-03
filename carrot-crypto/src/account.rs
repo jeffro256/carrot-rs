@@ -9,13 +9,16 @@ use crate::type_macros::*;
 define_tiny_byte_type! {MasterSecret, "Master secret for a Carrot-derived account", 32, ZeroizeOnDrop}
 define_tiny_byte_type! {ViewBalanceSecret, "View-balance secret for a Carrot-derived account", 32, ZeroizeOnDrop}
 define_tiny_byte_type! {GenerateAddressSecret, "Generate-address secret for a Carrot-derived account", 32, ZeroizeOnDrop}
-define_tiny_byte_type! {AddressIndexGeneratorSecret, "Address index generator secret for a Carrot-derived address", 32, ZeroizeOnDrop}
+define_tiny_byte_type! {GenerateImagePreimage, "Generate-image key preimage for a Carrot-derived account", 32, ZeroizeOnDrop}
+define_tiny_byte_type! {AddressIndexPreimage1, "Address index preimage 1 for a Carrot-derived address", 32, ZeroizeOnDrop}
+define_tiny_byte_type! {AddressIndexPreimage2, "Address index preimage 2 for a Carrot-derived address", 32, ZeroizeOnDrop}
 
 define_tiny_scalar_type! {ProveSpendKey, "Prove-spend key for a Carrot-derived account"}
 define_tiny_scalar_type! {GenerateImageKey, "Generate-image key for a Carrot-derived account"}
 define_tiny_scalar_type! {ViewIncomingKey, "View-incoming key for a Carrot-derived account"}
 define_tiny_scalar_type! {SubaddressScalarSecret, "Subaddress scalar key for a Carrot-derived address"}
 
+define_tiny_edwards_type! {PartialAccountSpendPubkey, "Preimage to account spend pubkey in Carrot-derived account"}
 define_tiny_edwards_type! {AddressSpendPubkey, "Spend pubkey in an address or account, Carrot-derived or otherwise"}
 define_tiny_edwards_type! {AddressViewPubkey, "View pubkey in an address or account, Carrot-derived or otherwise"}
 
@@ -28,6 +31,14 @@ impl ProveSpendKey {
     }
 }
 
+impl PartialAccountSpendPubkey {
+    /// Derive Carrot key hierarchy partial prove-spend pubkey from the prove-spend key
+    pub fn derive(k_prove_spend: &ProveSpendKey) -> Self {
+        // K_ps = k_ps T
+        Self(scalar_mul_t(k_prove_spend))
+    }
+}
+
 impl ViewBalanceSecret {
     /// Derive Carrot key hierarchy view-balance secret from the master secret
     pub fn derive(s_master: &MasterSecret) -> Self {
@@ -37,12 +48,24 @@ impl ViewBalanceSecret {
     }
 }
 
+impl GenerateImagePreimage {
+    /// Derive Carrot key hierarchy generate-image preimage secret from the view-balance secret
+    pub fn derive(s_view_balance: &ViewBalanceSecret) -> Self {
+        // s_gp = H_32(s_vb)
+        let transcript = make_carrot_transcript!(domain_separators::GENERATE_IMAGE_PREIMAGE,);
+        Self(derive_bytes_32(&transcript, s_view_balance.as_bytes()))
+    }
+}
+
 impl GenerateImageKey {
     /// Derive Carrot key hierarchy generate-image key from the view-balance secret
-    pub fn derive(s_view_balance: &ViewBalanceSecret) -> Self {
-        // k_gi = H_n(s_vb)
-        let transcript = make_carrot_transcript!(domain_separators::GENERATE_IMAGE_KEY,);
-        Self(derive_scalar(&transcript, s_view_balance.as_bytes()))
+    pub fn derive(s_generate_image_preimage: &GenerateImagePreimage,
+        partial_account_spend_pubkey: &PartialAccountSpendPubkey
+    ) -> Self {
+        // k_gi = H_n(s_gp, K_ps)
+        let transcript = make_carrot_transcript!(domain_separators::GENERATE_IMAGE_KEY,
+            PartialAccountSpendPubkey : partial_account_spend_pubkey);
+        Self(derive_scalar(&transcript, s_generate_image_preimage.as_bytes()))
     }
 }
 
@@ -112,29 +135,45 @@ impl AddressViewPubkey {
     }
 }
 
-impl AddressIndexGeneratorSecret {
+impl AddressIndexPreimage1 {
+    /// Derive Carrot key hierarchy address index preimage 1 from account secrets and index
     pub fn derive(s_generate_address: &GenerateAddressSecret, j_major: u32, j_minor: u32) -> Self {
-        // s^j_gen = H_32[s_ga](j_major, j_minor)
-        let transcript = make_carrot_transcript!(domain_separators::ADDRESS_INDEX_GEN,
+        // s^j_ap1 = H_32[s_ga](j_major, j_minor)
+        let transcript = make_carrot_transcript!(domain_separators::ADDRESS_INDEX_PREIMAGE_1,
             u32 : &j_major, u32 : &j_minor);
         Self::from(derive_bytes_32(&transcript, s_generate_address.as_bytes()))
     }
 }
 
-impl SubaddressScalarSecret {
-    /// Derive subaddress scalar secret from account secrets and its index value
+impl AddressIndexPreimage2 {
+    /// Derive Carrot key hierarchy address index preimage 2 from account public info and index
     pub fn derive(
-        account_spend_pubkey: &AddressSpendPubkey,
-        account_view_pubkey: &AddressViewPubkey,
-        s_address_generator: &AddressIndexGeneratorSecret,
+        s_address_index_preimage_1: &AddressIndexPreimage1,
         j_major: u32,
         j_minor: u32,
+        account_spend_pubkey: &AddressSpendPubkey,
+        account_view_pubkey: &AddressViewPubkey
     ) -> Self {
-        // k^j_subscal = H_n[s^j_gen](K_s, K_v, j_major, j_minor)
+        // s^j_ap2 = H_32[s^j_ap1](j_major, j_minor, K_s, K_v)
+        let transcript = make_carrot_transcript!(domain_separators::ADDRESS_INDEX_PREIMAGE_2,
+            u32 : &j_major,
+            u32 : &j_minor,
+            AddressSpendPubkey : account_spend_pubkey,
+            AddressViewPubkey: account_view_pubkey);
+        Self::from(derive_bytes_32(&transcript, s_address_index_preimage_1.as_bytes()))
+    }
+}
+
+impl SubaddressScalarSecret {
+    /// Derive subaddress scalar secret from account spend pubkey and preimages
+    pub fn derive(
+        s_address_index_preimage_2: &AddressIndexPreimage2,
+        account_spend_pubkey: &AddressSpendPubkey
+    ) -> Self {
+        // k^j_subscal = H_n[s^j_ap2](K_s)
         let transcript = make_carrot_transcript!(domain_separators::SUBADDRESS_SCALAR,
-            AddressSpendPubkey : account_spend_pubkey, AddressViewPubkey : account_view_pubkey,
-            u32 : &j_major, u32 : &j_minor);
-        Self(derive_scalar(&transcript, s_address_generator.as_bytes()))
+            AddressSpendPubkey : account_spend_pubkey);
+        Self(derive_scalar(&transcript, s_address_index_preimage_2.as_bytes()))
     }
 }
 
@@ -154,6 +193,16 @@ mod test {
     }
 
     #[test]
+    fn converge_make_carrot_partial_spend_pubkey() {
+        assert_eq_hex!(
+            "eef3184e91505660c8ccbdeec1bd3b1b7b56d2c39efcad8a036f963470d6f498",
+            PartialAccountSpendPubkey::derive(&hex_into!(
+                "c9651fc906015afeefdb8d3bf7be621c36e035de2a85cb22dd4b869a22086f0e"
+            ))
+        );
+    }
+
+    #[test]
     fn converge_make_carrot_viewbalance_secret() {
         assert_eq_hex!(
             "59b2ee8646923309384704613418f5982b0167eb3cd87c6c067ee10700c3af91",
@@ -164,21 +213,32 @@ mod test {
     }
 
     #[test]
+    fn converge_make_carrot_generateimage_preimage() {
+        assert_eq_hex!(
+            "0f3bf96a0642ab4cd10e8c64fba1cc535379ec18dbc7d304d50eb753197e266f",
+            GenerateImagePreimage::derive(&hex_into!(
+                "59b2ee8646923309384704613418f5982b0167eb3cd87c6c067ee10700c3af91"
+            ))
+        );
+    }
+
+    #[test]
     fn converge_make_carrot_generateimage_key() {
         assert_eq_hex!(
-            "b9c67add7cc5d660c62ad0541685eb84e6a13fef3f15fdc8fe52a8cdfbe7240f",
-            GenerateImageKey::derive(&hex_into!(
-                "154c5e01902b20acc8436c9aa06b40355d78dfda0fc6af3d53a2220f1363a0f5"
-            ))
+            "dabc1ed54dc44f68f67200a1a66ee30b3237f05c2f6dc0dd47e5743431ac800b",
+            GenerateImageKey::derive(
+                &hex_into!("0f3bf96a0642ab4cd10e8c64fba1cc535379ec18dbc7d304d50eb753197e266f"),
+                &hex_into!("eef3184e91505660c8ccbdeec1bd3b1b7b56d2c39efcad8a036f963470d6f498")
+            )
         );
     }
 
     #[test]
     fn converge_make_carrot_viewincoming_key() {
         assert_eq_hex!(
-            "81df86e1c261aa719849e66c954992394f450eab7ff1bb2643663eabcd12af0c",
+            "12624c702b4c1a22fd710a836894ed0705955502e6498e5c6e3ad6f5920bb00f",
             ViewIncomingKey::derive(&hex_into!(
-                "154c5e01902b20acc8436c9aa06b40355d78dfda0fc6af3d53a2220f1363a0f5"
+                "59b2ee8646923309384704613418f5982b0167eb3cd87c6c067ee10700c3af91"
             ))
         );
     }
@@ -186,9 +246,9 @@ mod test {
     #[test]
     fn converge_make_carrot_generateaddress_secret() {
         assert_eq_hex!(
-            "bb15de08485cbd8115283e65517fff91ccca190bac8a8591f52c49d09a7ae080",
+            "039f0744fb138954072ee6bcbda4b5c085fd05e09b476a7b34ad20bf9ad440bc",
             GenerateAddressSecret::derive(&hex_into!(
-                "154c5e01902b20acc8436c9aa06b40355d78dfda0fc6af3d53a2220f1363a0f5"
+                "59b2ee8646923309384704613418f5982b0167eb3cd87c6c067ee10700c3af91"
             ))
         );
     }
@@ -196,22 +256,36 @@ mod test {
     #[test]
     fn converge_make_carrot_spend_pubkey() {
         assert_eq_hex!(
-            "c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f",
+            "4198f391723f6c64eb75e4f0e341d576dc344e8a8ad3164444451855dbd862b4",
             AddressSpendPubkey::derive_carrot_account_spend_pubkey(
-                &hex_into!("336e3af233b3aa5bc95d5589aba67aab727727419899823acc6a6c4479e4ea04"),
-                &hex_into!("f10bf01839ea216e5d70b7c9ceaa8b8e9a432b5e98e6e48a8043ffb3fa229f0b")
+                &hex_into!("dabc1ed54dc44f68f67200a1a66ee30b3237f05c2f6dc0dd47e5743431ac800b"),
+                &hex_into!("c9651fc906015afeefdb8d3bf7be621c36e035de2a85cb22dd4b869a22086f0e")
             )
         );
     }
 
     #[test]
-    fn converge_make_carrot_index_extension_generator() {
+    fn converge_make_carrot_address_index_preimage_1() {
         assert_eq_hex!(
-            "d2e2e8a75026f0e953e3a46d0ea826f22649bbfc5f04b14a9da14063d6199cc2",
-            AddressIndexGeneratorSecret::derive(
-                &hex_into!("593ece76c5d24cbfe3c7ac9e2d455cdd4b372c89584700bf1c2e7bef2b70a4d1"),
+            "9c21bf89635102f5379f97b5d08074e6ed36084544262f92a93d7644945475f1",
+            AddressIndexPreimage1::derive(
+                &hex_into!("039f0744fb138954072ee6bcbda4b5c085fd05e09b476a7b34ad20bf9ad440bc"),
                 5,
                 16
+            )
+        );
+    }
+
+    #[test]
+    fn converge_make_carrot_address_index_preimage_2() {
+        assert_eq_hex!(
+            "523188ad4482797566397e9e7f13c9e7169b04aefd9eb449c31baaab82713a19",
+            AddressIndexPreimage2::derive(
+                &hex_into!("9c21bf89635102f5379f97b5d08074e6ed36084544262f92a93d7644945475f1"),
+                5,
+                16,
+                &hex_into!("4198f391723f6c64eb75e4f0e341d576dc344e8a8ad3164444451855dbd862b4"),
+                &hex_into!("14d12188409591353096b41abeccf66a88d916dfe0e6d1998672293ebc1cc83d")
             )
         );
     }
@@ -219,13 +293,10 @@ mod test {
     #[test]
     fn converge_make_carrot_subaddress_scalar() {
         assert_eq_hex!(
-            "5ffc416bbd22770789d4a55c9efe0675abad116c3e33cf88bf2b0cbbb8b0ef0d",
+            "016b3265a2b7b0d05bcffd6f4e87df9fd9b8cd2a39dfc38c4731ca243cca5f09",
             SubaddressScalarSecret::derive(
-                &hex_into!("c984806ae9be958800cfe04b5ed85279f48d78c3792b5abb2f5ce2b67adc491f"),
-                &hex_into!("a30c1b720a66557c03a9784c6dd0902c95ee56670e04907d18eaa20608a72e7e"),
-                &hex_into!("79ad2383f44b4d26413adb7ae79c5658b2a8c20b6f5046bfa9f229bfcf1744a7"),
-                5,
-                16
+                &hex_into!("523188ad4482797566397e9e7f13c9e7169b04aefd9eb449c31baaab82713a19"),
+                &hex_into!("4198f391723f6c64eb75e4f0e341d576dc344e8a8ad3164444451855dbd862b4")
             )
         );
     }

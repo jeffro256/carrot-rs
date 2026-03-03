@@ -3,6 +3,14 @@ use group::GroupEncoding;
 
 use crate::as_crypto::{AsEdwardsPoint, AsScalar};
 
+pub fn scalar_mul_t<S>(y: &S) -> CompressedEdwardsY
+where
+    S: AsScalar
+{
+    // y T
+    (y.as_scalar_ref() * &*monero_generators::T).compress()
+}
+
 pub fn scalar_mul_gt<S1, S2>(x: &S1, y: &S2) -> CompressedEdwardsY
 where
     S1: AsScalar,

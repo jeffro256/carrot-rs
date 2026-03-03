@@ -3,21 +3,7 @@ use crate::device::ViewIncomingKeyDevice;
 use crate::enote::{CarrotCoinbaseEnoteV1, CarrotEnoteV1};
 use crate::*;
 
-pub enum LazyAmountCommitment {
-    Closed(AmountCommitment),
-    CleartextOpen(Amount),
-}
-
-impl LazyAmountCommitment {
-    pub fn calculate(&self) -> AmountCommitment {
-        match self {
-            Self::Closed(x) => x.clone(),
-            Self::CleartextOpen(a) => AmountCommitment::clear_commit(*a),
-        }
-    }
-}
-
-unsafe fn scan_carrot_dest_info(
+unsafe fn scan_non_coinbase_dest_info(
     onetime_address: &OutputPubkey,
     amount_commitment: &AmountCommitment,
     encrypted_janus_anchor: &EncryptedJanusAnchor,
@@ -30,17 +16,22 @@ unsafe fn scan_carrot_dest_info(
     PaymentId,
     JanusAnchor,
 )> {
-    // k^o_g = H_n("..g..", s^ctx_sr, C_a)
-    let sender_extension_g = OnetimeExtensionG::derive(s_sender_receiver, amount_commitment);
+    // k^g_o = H_n[s^ctx_sr]("..G..", C_a)
+    let sender_extension_g = OnetimeExtensionG::derive_ringct(s_sender_receiver, amount_commitment);
 
-    // k^o_t = H_n("..t..", s^ctx_sr, C_a)
-    let sender_extension_t = OnetimeExtensionT::derive(s_sender_receiver, amount_commitment);
+    // k^t_o = H_n[s^ctx_sr]("..T..", C_a)
+    let sender_extension_t = OnetimeExtensionT::derive_ringct(s_sender_receiver, amount_commitment);
 
-    // K^j_s = Ko - K^o_ext = Ko - (k^o_g G + k^o_t T)
-    let address_spend_pubkey = AddressSpendPubkey::recover_from_onetime_address(
+    // K^ext_o = k^g_o G + k^t_o T
+    let sender_extension = OnetimeExtension::derive_from_scalars(
+        &sender_extension_g,
+        &sender_extension_t
+    );
+
+    // K^j_s = Ko - K^o_ext = Ko - (k^g_o G + k^t_o T)
+    let address_spend_pubkey = AddressSpendPubkey::recover_from_extension(
         onetime_address,
-        s_sender_receiver,
-        amount_commitment,
+        &sender_extension
     )?;
 
     // pid = pid_enc XOR m_pid, if applicable
@@ -63,72 +54,10 @@ unsafe fn scan_carrot_dest_info(
     ))
 }
 
-unsafe fn try_scan_carrot_external_noamount(
-    onetime_address: &OutputPubkey,
-    lazy_amount_commitment: &LazyAmountCommitment,
-    encrypted_janus_anchor: &EncryptedJanusAnchor,
-    view_tag: &ViewTag,
-    enote_ephemeral_pubkey: &EnoteEphemeralPubkey,
-    encrypted_payment_id: Option<&EncryptedPaymentId>,
-    input_context: &InputContext,
-    s_sender_receiver_unctx: &MontgomeryECDH,
-) -> Option<(
-    SenderReceiverSecret,
-    OnetimeExtensionG,
-    OnetimeExtensionT,
-    AddressSpendPubkey,
-    PaymentId,
-    JanusAnchor,
-)> {
-    // if vt' != vt, then FAIL
-    if !view_tag.derive_and_test(
-        &s_sender_receiver_unctx.as_montgomery_ref().0,
-        input_context,
-        onetime_address,
-    ) {
-        return None;
-    }
-
-    // s^ctx_sr = H_32(s_sr, D_e, input_context)
-    let s_sender_receiver = SenderReceiverSecret::derive(
-        &s_sender_receiver_unctx.as_montgomery_ref().0,
-        enote_ephemeral_pubkey,
-        input_context,
-    );
-
-    // get C_a
-    let amount_commitment = lazy_amount_commitment.calculate();
-
-    // k^g_o, k^t_o, K^j_s', pid', anchor'
-    let (
-        sender_extension_g,
-        sender_extension_t,
-        address_spend_pubkey,
-        nominal_payment_id,
-        janus_anchor,
-    ) = unsafe {
-        scan_carrot_dest_info(
-            onetime_address,
-            &amount_commitment,
-            encrypted_janus_anchor,
-            encrypted_payment_id,
-            &s_sender_receiver,
-        )?
-    };
-
-    return Some((
-        s_sender_receiver,
-        sender_extension_g,
-        sender_extension_t,
-        address_spend_pubkey,
-        nominal_payment_id,
-        janus_anchor,
-    ));
-}
-
 pub unsafe fn try_scan_carrot_coinbase_enote_no_janus(
     enote: &CarrotCoinbaseEnoteV1,
     s_sender_receiver_unctx: &MontgomeryECDH,
+    main_address_spend_pubkeys: &[AddressSpendPubkey]
 ) -> Option<(
     OnetimeExtensionG,
     OnetimeExtensionT,
@@ -138,26 +67,60 @@ pub unsafe fn try_scan_carrot_coinbase_enote_no_janus(
     // input_context
     let input_context = InputContext::new_coinbase(enote.block_index);
 
-    // s^ctx_sr, k^g_o, k^g_t, K^j_s, pid, anchor
-    let (_, sender_extension_g, sender_extension_t, address_spend_pubkey, _, janus_anchor) = unsafe {
-        try_scan_carrot_external_noamount(
-            &enote.onetime_address,
-            &LazyAmountCommitment::CleartextOpen(enote.amount),
-            &enote.anchor_enc,
-            &enote.view_tag,
-            &enote.enote_ephemeral_pubkey,
-            None,
-            &input_context,
-            s_sender_receiver_unctx,
-        )?
-    };
+    // if vt' != vt, then FAIL
+    if !enote.view_tag.derive_and_test(
+        &s_sender_receiver_unctx.as_montgomery_ref().0,
+        &input_context,
+        &enote.onetime_address,
+    ) {
+        return None;
+    }
 
-    Some((
-        sender_extension_g,
-        sender_extension_t,
-        address_spend_pubkey,
-        janus_anchor,
-    ))
+    // s^ctx_sr = H_32(s_sr, D_e, input_context)
+    let s_sender_receiver = SenderReceiverSecret::derive(
+        &s_sender_receiver_unctx.as_montgomery_ref().0,
+        &enote.enote_ephemeral_pubkey,
+        &input_context,
+    );
+
+    for main_address_spend_pubkey in main_address_spend_pubkeys.iter() {
+        // k^g_o = H_n[s^ctx_sr]("..coinbase..G..", a, K^0_s)
+        let sender_extension_g = OnetimeExtensionG::derive_coinbase(
+            &s_sender_receiver, enote.amount, main_address_spend_pubkey
+        );
+
+        // k^t_o = H_n[s^ctx_sr]("..coinbase..T..", a, K^0_s)
+        let sender_extension_t = OnetimeExtensionT::derive_coinbase(
+            &s_sender_receiver, enote.amount, main_address_spend_pubkey
+        );
+
+        // K^ext_o = k^g_o G + k^t_o T
+        let sender_extension = OnetimeExtension::derive_from_scalars(
+            &sender_extension_g,
+            &sender_extension_t
+        );
+
+        // K^j_s = Ko - K^o_ext
+        let recovered_address_spend_pubkey = AddressSpendPubkey::recover_from_extension(
+            &enote.onetime_address,
+            &sender_extension
+        )?;
+
+        // if hit on some K^0_s:
+        if &recovered_address_spend_pubkey == main_address_spend_pubkey {
+            // anchor = anchor_enc XOR m_anchor
+            let janus_anchor = enote.anchor_enc.decrypt(&s_sender_receiver, &enote.onetime_address);
+
+            return Some((
+                sender_extension_g,
+                sender_extension_t,
+                recovered_address_spend_pubkey,
+                janus_anchor,
+            ));
+        }
+    }
+
+    None   
 }
 
 pub unsafe fn try_scan_carrot_enote_external_no_janus(
@@ -177,24 +140,36 @@ pub unsafe fn try_scan_carrot_enote_external_no_janus(
     // input_context
     let input_context = InputContext::new_ringct(&enote.tx_first_key_image);
 
-    // s^ctx_sr, k^g_o, k^g_t, K^j_s, pid, and Janus verification
+    // if vt' != vt, then FAIL
+    if !enote.view_tag.derive_and_test(
+        &s_sender_receiver_unctx.as_montgomery_ref().0,
+        &input_context,
+        &enote.onetime_address,
+    ) {
+        return None;
+    }
+
+    // s^ctx_sr = H_32(s_sr, D_e, input_context)
+    let s_sender_receiver = SenderReceiverSecret::derive(
+        &s_sender_receiver_unctx.as_montgomery_ref().0,
+        &enote.enote_ephemeral_pubkey,
+        &input_context,
+    );
+
+    // k^g_o, k^t_o, K^j_s', pid', anchor'
     let (
-        s_sender_receiver,
         sender_extension_g,
         sender_extension_t,
         address_spend_pubkey,
-        payment_id,
+        nominal_payment_id,
         janus_anchor,
     ) = unsafe {
-        try_scan_carrot_external_noamount(
+        scan_non_coinbase_dest_info(
             &enote.onetime_address,
-            &LazyAmountCommitment::Closed(enote.amount_commitment.clone()),
+            &enote.amount_commitment,
             &enote.anchor_enc,
-            &enote.view_tag,
-            &enote.enote_ephemeral_pubkey,
             encrypted_payment_id,
-            &input_context,
-            s_sender_receiver_unctx,
+            &s_sender_receiver,
         )?
     };
 
@@ -213,7 +188,7 @@ pub unsafe fn try_scan_carrot_enote_external_no_janus(
         address_spend_pubkey,
         amount,
         amount_blinding_factor,
-        payment_id,
+        nominal_payment_id,
         enote_type,
         janus_anchor,
     ))
@@ -233,7 +208,7 @@ pub unsafe fn try_scan_carrot_enote_internal_burnt(
 )> {
     // k^g_o, k^t_o, K^j_s', pid', anchor'
     let (sender_extension_g, sender_extension_t, address_spend_pubkey, _, janus_anchor) = unsafe {
-        scan_carrot_dest_info(
+        scan_non_coinbase_dest_info(
             &enote.onetime_address,
             &enote.amount_commitment,
             &enote.anchor_enc,

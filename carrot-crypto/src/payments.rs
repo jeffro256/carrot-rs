@@ -141,18 +141,28 @@ fn get_output_proposal_parts(
     // 2. C_a = k_a G + a H
     let amount_commitment = AmountCommitment::commit(amount, &amount_blinding_factor);
 
-    // 3. Ko = K^j_s + K^o_ext = K^j_s + (k^o_g G + k^o_t T)
-    let onetime_address = OutputPubkey::derive_from_sender_receiver_secret(
+    // 3. K^o_ext = k^g_o G + k^t_o T, where:
+    let onetime_extension = if coinbase_amount_commitment {
+        // k^g_o = H_n[s^ctx_sr]("..coinbase..G..", a, K^0_s)
+        // k^t_o = H_n[s^ctx_sr]("..coinbase..T..", a, K^0_s)
+        OnetimeExtension::derive_coinbase(s_sender_receiver, amount, destination_spend_pubkey)
+    } else {
+        // k^g_o = H_n[s^ctx_sr]("..G..", C_a)
+        // k^t_o = H_n[s^ctx_sr]("..T..", C_a)
+        OnetimeExtension::derive_ringct(s_sender_receiver, &amount_commitment)
+    };
+
+    // 4. K_o = K^j_s + K^o_ext
+    let onetime_address = OutputPubkey::derive_from_extension(
         destination_spend_pubkey,
-        s_sender_receiver,
-        &amount_commitment,
+        &onetime_extension
     )
     .ok_or(Error::new(ErrorKind::BadAddressPoints))?;
 
-    // 4. a_enc = a XOR m_a
+    // 5. a_enc = a XOR m_a
     let encrypted_amount = EncryptedAmount::encrypt(amount, s_sender_receiver, &onetime_address);
 
-    // 5. pid_enc = pid XOR m_pid
+    // 6. pid_enc = pid XOR m_pid
     let encrypted_payment_id =
         EncryptedPaymentId::encrypt(payment_id, s_sender_receiver, &onetime_address);
 

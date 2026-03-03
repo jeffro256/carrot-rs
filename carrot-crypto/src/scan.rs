@@ -24,7 +24,10 @@ fn try_scan_carrot_coinbase_enote_checked(
 ) -> Option<(OnetimeExtensionG, OnetimeExtensionT, AddressSpendPubkey)> {
     // s^ctx_sr, k^g_o, k^g_t, K^j_s, pid, anchor
     let (sender_extension_g, sender_extension_t, address_spend_pubkey, nominal_janus_anchor) =
-        unsafe { try_scan_carrot_coinbase_enote_no_janus(enote, s_sender_receiver_unctx) }?;
+        unsafe { try_scan_carrot_coinbase_enote_no_janus(enote,
+            s_sender_receiver_unctx,
+            main_address_spend_pubkeys
+        ) }?;
 
     if !is_main_address_spend_pubkey(&address_spend_pubkey, main_address_spend_pubkeys) {
         return None;
