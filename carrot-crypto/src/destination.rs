@@ -56,14 +56,12 @@ impl CarrotDestinationV1 {
             major_index,
             minor_index,
             account_spend_pubkey,
-            account_view_pubkey
+            account_view_pubkey,
         );
 
         // k^j_subscal = H_n[s^j_ap1](K_s)
-        let subaddress_scalar = SubaddressScalarSecret::derive(
-            &s_address_index_preimage_2,
-            account_spend_pubkey
-        );
+        let subaddress_scalar =
+            SubaddressScalarSecret::derive(&s_address_index_preimage_2, account_spend_pubkey);
 
         // K^j_s = k^j_subscal * K_s
         let address_spend_pubkey = AddressSpendPubkey::derive_subaddress_spend_pubkey(

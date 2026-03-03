@@ -123,7 +123,9 @@ impl MockKeys {
                 AddressDeriveType::Carrot => {
                     // s^j_ap1 = H_32[s_ga](j_major, j_minor)
                     let s_address_index_preimage_1 = AddressIndexPreimage1::derive(
-                        &self.s_generate_address, major_index, minor_index
+                        &self.s_generate_address,
+                        major_index,
+                        minor_index,
                     );
 
                     // s^j_ap2 = H_32[s^j_ap1](j_major, j_minor, K_s, K_v)
@@ -139,7 +141,7 @@ impl MockKeys {
                         // k^j_subscal = H_n[s^j_gen](K_s, K_v, j_major, j_minor)
                         SubaddressScalarSecret::derive(
                             &s_address_index_preimage_2,
-                            &self.carrot_account_spend_pubkey
+                            &self.carrot_account_spend_pubkey,
                         )
                     } else {
                         // k^j_subscal = 1
@@ -330,7 +332,8 @@ impl MockKeys {
         let partial_account_spend_pubkey = PartialAccountSpendPubkey::derive(&k_prove_spend);
         let s_view_balance = ViewBalanceSecret::derive(&s_master);
         let s_generate_image_preimage = GenerateImagePreimage::derive(&s_view_balance);
-        let k_generate_image = GenerateImageKey::derive(&s_generate_image_preimage, &partial_account_spend_pubkey);
+        let k_generate_image =
+            GenerateImageKey::derive(&s_generate_image_preimage, &partial_account_spend_pubkey);
         let s_generate_address = GenerateAddressSecret::derive(&s_view_balance);
 
         // derive view-incoming {pub/priv}key, dependent on address derive type

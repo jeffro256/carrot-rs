@@ -23,16 +23,12 @@ unsafe fn scan_non_coinbase_dest_info(
     let sender_extension_t = OnetimeExtensionT::derive_ringct(s_sender_receiver, amount_commitment);
 
     // K^ext_o = k^g_o G + k^t_o T
-    let sender_extension = OnetimeExtension::derive_from_scalars(
-        &sender_extension_g,
-        &sender_extension_t
-    );
+    let sender_extension =
+        OnetimeExtension::derive_from_scalars(&sender_extension_g, &sender_extension_t);
 
     // K^j_s = Ko - K^o_ext = Ko - (k^g_o G + k^t_o T)
-    let address_spend_pubkey = AddressSpendPubkey::recover_from_extension(
-        onetime_address,
-        &sender_extension
-    )?;
+    let address_spend_pubkey =
+        AddressSpendPubkey::recover_from_extension(onetime_address, &sender_extension)?;
 
     // pid = pid_enc XOR m_pid, if applicable
     let nominal_payment_id = match encrypted_payment_id {
@@ -57,7 +53,7 @@ unsafe fn scan_non_coinbase_dest_info(
 pub unsafe fn try_scan_carrot_coinbase_enote_no_janus(
     enote: &CarrotCoinbaseEnoteV1,
     s_sender_receiver_unctx: &MontgomeryECDH,
-    main_address_spend_pubkeys: &[AddressSpendPubkey]
+    main_address_spend_pubkeys: &[AddressSpendPubkey],
 ) -> Option<(
     OnetimeExtensionG,
     OnetimeExtensionT,
@@ -86,30 +82,32 @@ pub unsafe fn try_scan_carrot_coinbase_enote_no_janus(
     for main_address_spend_pubkey in main_address_spend_pubkeys.iter() {
         // k^g_o = H_n[s^ctx_sr]("..coinbase..G..", a, K^0_s)
         let sender_extension_g = OnetimeExtensionG::derive_coinbase(
-            &s_sender_receiver, enote.amount, main_address_spend_pubkey
+            &s_sender_receiver,
+            enote.amount,
+            main_address_spend_pubkey,
         );
 
         // k^t_o = H_n[s^ctx_sr]("..coinbase..T..", a, K^0_s)
         let sender_extension_t = OnetimeExtensionT::derive_coinbase(
-            &s_sender_receiver, enote.amount, main_address_spend_pubkey
+            &s_sender_receiver,
+            enote.amount,
+            main_address_spend_pubkey,
         );
 
         // K^ext_o = k^g_o G + k^t_o T
-        let sender_extension = OnetimeExtension::derive_from_scalars(
-            &sender_extension_g,
-            &sender_extension_t
-        );
+        let sender_extension =
+            OnetimeExtension::derive_from_scalars(&sender_extension_g, &sender_extension_t);
 
         // K^j_s = Ko - K^o_ext
-        let recovered_address_spend_pubkey = AddressSpendPubkey::recover_from_extension(
-            &enote.onetime_address,
-            &sender_extension
-        )?;
+        let recovered_address_spend_pubkey =
+            AddressSpendPubkey::recover_from_extension(&enote.onetime_address, &sender_extension)?;
 
         // if hit on some K^0_s:
         if &recovered_address_spend_pubkey == main_address_spend_pubkey {
             // anchor = anchor_enc XOR m_anchor
-            let janus_anchor = enote.anchor_enc.decrypt(&s_sender_receiver, &enote.onetime_address);
+            let janus_anchor = enote
+                .anchor_enc
+                .decrypt(&s_sender_receiver, &enote.onetime_address);
 
             return Some((
                 sender_extension_g,
@@ -120,7 +118,7 @@ pub unsafe fn try_scan_carrot_coinbase_enote_no_janus(
         }
     }
 
-    None   
+    None
 }
 
 pub unsafe fn try_scan_carrot_enote_external_no_janus(

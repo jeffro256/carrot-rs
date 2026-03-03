@@ -59,13 +59,17 @@ impl GenerateImagePreimage {
 
 impl GenerateImageKey {
     /// Derive Carrot key hierarchy generate-image key from the view-balance secret
-    pub fn derive(s_generate_image_preimage: &GenerateImagePreimage,
-        partial_account_spend_pubkey: &PartialAccountSpendPubkey
+    pub fn derive(
+        s_generate_image_preimage: &GenerateImagePreimage,
+        partial_account_spend_pubkey: &PartialAccountSpendPubkey,
     ) -> Self {
         // k_gi = H_n(s_gp, K_ps)
         let transcript = make_carrot_transcript!(domain_separators::GENERATE_IMAGE_KEY,
             PartialAccountSpendPubkey : partial_account_spend_pubkey);
-        Self(derive_scalar(&transcript, s_generate_image_preimage.as_bytes()))
+        Self(derive_scalar(
+            &transcript,
+            s_generate_image_preimage.as_bytes(),
+        ))
     }
 }
 
@@ -152,7 +156,7 @@ impl AddressIndexPreimage2 {
         j_major: u32,
         j_minor: u32,
         account_spend_pubkey: &AddressSpendPubkey,
-        account_view_pubkey: &AddressViewPubkey
+        account_view_pubkey: &AddressViewPubkey,
     ) -> Self {
         // s^j_ap2 = H_32[s^j_ap1](j_major, j_minor, K_s, K_v)
         let transcript = make_carrot_transcript!(domain_separators::ADDRESS_INDEX_PREIMAGE_2,
@@ -160,7 +164,10 @@ impl AddressIndexPreimage2 {
             u32 : &j_minor,
             AddressSpendPubkey : account_spend_pubkey,
             AddressViewPubkey: account_view_pubkey);
-        Self::from(derive_bytes_32(&transcript, s_address_index_preimage_1.as_bytes()))
+        Self::from(derive_bytes_32(
+            &transcript,
+            s_address_index_preimage_1.as_bytes(),
+        ))
     }
 }
 
@@ -168,12 +175,15 @@ impl SubaddressScalarSecret {
     /// Derive subaddress scalar secret from account spend pubkey and preimages
     pub fn derive(
         s_address_index_preimage_2: &AddressIndexPreimage2,
-        account_spend_pubkey: &AddressSpendPubkey
+        account_spend_pubkey: &AddressSpendPubkey,
     ) -> Self {
         // k^j_subscal = H_n[s^j_ap2](K_s)
         let transcript = make_carrot_transcript!(domain_separators::SUBADDRESS_SCALAR,
             AddressSpendPubkey : account_spend_pubkey);
-        Self(derive_scalar(&transcript, s_address_index_preimage_2.as_bytes()))
+        Self(derive_scalar(
+            &transcript,
+            s_address_index_preimage_2.as_bytes(),
+        ))
     }
 }
 

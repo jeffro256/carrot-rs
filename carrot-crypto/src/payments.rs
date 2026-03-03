@@ -153,11 +153,9 @@ fn get_output_proposal_parts(
     };
 
     // 4. K_o = K^j_s + K^o_ext
-    let onetime_address = OutputPubkey::derive_from_extension(
-        destination_spend_pubkey,
-        &onetime_extension
-    )
-    .ok_or(Error::new(ErrorKind::BadAddressPoints))?;
+    let onetime_address =
+        OutputPubkey::derive_from_extension(destination_spend_pubkey, &onetime_extension)
+            .ok_or(Error::new(ErrorKind::BadAddressPoints))?;
 
     // 5. a_enc = a XOR m_a
     let encrypted_amount = EncryptedAmount::encrypt(amount, s_sender_receiver, &onetime_address);

@@ -198,7 +198,7 @@ impl OnetimeExtensionG {
     pub fn derive_coinbase(
         s_sender_receiver: &SenderReceiverSecret,
         amount: Amount,
-        main_address_spend_pubkey: &AddressSpendPubkey
+        main_address_spend_pubkey: &AddressSpendPubkey,
     ) -> Self {
         // k^g_o = H_n[s^ctx_sr]("..coinbase..G..", a, K^0_s)
         let transcript = make_carrot_transcript!(domain_separators::ONETIME_EXTENSION_G_COINBASE,
@@ -221,7 +221,7 @@ impl OnetimeExtensionT {
     pub fn derive_coinbase(
         s_sender_receiver: &SenderReceiverSecret,
         amount: Amount,
-        main_address_spend_pubkey: &AddressSpendPubkey
+        main_address_spend_pubkey: &AddressSpendPubkey,
     ) -> Self {
         // k^t_o = H_n[s^ctx_sr]("..coinbase..T..", a, K^0_s)
         let transcript = make_carrot_transcript!(domain_separators::ONETIME_EXTENSION_T_COINBASE,
@@ -252,20 +252,20 @@ impl OnetimeExtension {
     pub fn derive_coinbase(
         s_sender_receiver: &SenderReceiverSecret,
         amount: Amount,
-        main_address_spend_pubkey: &AddressSpendPubkey
+        main_address_spend_pubkey: &AddressSpendPubkey,
     ) -> Self {
         // k^g_o = H_n[s^ctx_sr]("..coinbase..G..", a, K^0_s)
         let onetime_ext_g = OnetimeExtensionG::derive_coinbase(
             s_sender_receiver,
             amount,
-            main_address_spend_pubkey
+            main_address_spend_pubkey,
         );
 
         // k^t_o = H_n[s^ctx_sr]("..coinbase..T..", a, K^0_s)
         let onetime_ext_t = OnetimeExtensionT::derive_coinbase(
             s_sender_receiver,
             amount,
-            main_address_spend_pubkey
+            main_address_spend_pubkey,
         );
 
         // K^o_ext = k^g_o G + k^t_o T
@@ -303,7 +303,7 @@ impl OutputPubkey {
 impl AddressSpendPubkey {
     pub fn recover_from_extension(
         onetime_address: &OutputPubkey,
-        sender_extension_pubkey: &OnetimeExtension
+        sender_extension_pubkey: &OnetimeExtension,
     ) -> Option<Self> {
         // K^j_s = Ko - K^o_ext
         Some(Self::from_inner(sub_edwards(

@@ -5,7 +5,7 @@ use crate::as_crypto::{AsEdwardsPoint, AsScalar};
 
 pub fn scalar_mul_t<S>(y: &S) -> CompressedEdwardsY
 where
-    S: AsScalar
+    S: AsScalar,
 {
     // y T
     (y.as_scalar_ref() * &*monero_generators::T).compress()
